@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "food-delivery",
-    "slug": "food-delivery",
+    "name": "Thaisty",
+    "slug": "thaisty",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -19,7 +19,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.reinharddaveyunardi.thaisty"
     },
     "web": {
       "bundler": "metro",
@@ -31,6 +32,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7e2c34c1-11c9-45fe-9334-d28530a3fa62"
+      }
     }
   }
 }
