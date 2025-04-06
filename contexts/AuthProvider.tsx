@@ -1,58 +1,48 @@
-import React, {createContext, useContext, useState, useEffect} from "react";
-import {auth} from "../config/firebase";
 import {onAuthStateChanged, User} from "firebase/auth";
-import {useRouter} from "expo-router";
-import {getToken, removeToken} from "@/services/SecureStore";
-
-type AuthContextType = {
-    user: User | null;
+import {createContext, useContext, useEffect, useState} from "react";
+import {auth, firestore} from "@/config/firebase";
+import {getUserId, saveUserId} from "@/services/SecureStore";
+import {doc, getDoc} from "firebase/firestore";
+interface AuthContextType {
+    user: User;
     loading: boolean;
-    logout: () => Promise<void>;
-};
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+    role: string;
+}
+const AuthContext = createContext<AuthContextType | any>(null);
 
 export const AuthProvider = ({children}: {children: React.ReactNode}) => {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<any>(null);
+    const [role, setRole] = useState(null);
     const [loading, setLoading] = useState(true);
-    const router = useRouter();
 
     useEffect(() => {
-        const checkAuth = async () => {
-            setLoading(true);
-            const token = await getToken();
-
-            if (token) {
-                onAuthStateChanged(auth, (currentUser) => {
-                    if (currentUser) {
-                        setUser(currentUser);
-                        router.replace("/dashboard/DashboardScreen");
-                    } else {
-                        setUser(null);
-                        router.replace("/auth/LoginScreen");
-                    }
-                    setLoading(false);
-                });
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                setUser(firebaseUser);
+                await saveUserId(firebaseUser.uid);
+                const userDoc = await getDoc(doc(firestore, "users", firebaseUser.uid));
+                if (userDoc.exists()) {
+                    setRole(userDoc.data().role);
+                    console.log("Role:", userDoc.data().role);
+                }
             } else {
-                setLoading(false);
+                const storedUserId = await getUserId();
+                if (storedUserId) {
+                    setUser({uid: storedUserId});
+                    const userDoc = await getDoc(doc(firestore, "users", storedUserId));
+                    if (userDoc.exists()) {
+                        setRole(userDoc.data().role);
+                        console.log("Role:", userDoc.data().role);
+                    }
+                }
             }
-        };
+            setLoading(false);
+        });
 
-        checkAuth();
+        return () => unsubscribe();
     }, []);
 
-    const logout = async () => {
-        await auth.signOut();
-        await removeToken();
-        setUser(null);
-        router.replace("/auth/LoginScreen");
-    };
-
-    return <AuthContext.Provider value={{user, loading, logout}}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{user, role, loading}}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) throw new Error("useAuth must be used within an AuthProvider");
-    return context;
-};
+export const useAuth = () => useContext(AuthContext);

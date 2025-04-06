@@ -1,66 +1,85 @@
-import {View, Text, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Image, Dimensions} from "react-native";
+import {View, Text, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Image, Dimensions, RefreshControl} from "react-native";
 import React, {useEffect, useState} from "react";
-import {Ionicons, MaterialIcons} from "@expo/vector-icons";
+import {Ionicons} from "@expo/vector-icons";
 import {getUserId} from "@/services/SecureStore";
-import {getUserData} from "@/services/api";
-import {foodData} from "@/data/FoodData";
+import {getFood, getUserData} from "@/services/api";
 import {Colors} from "@/constant/Colors";
 
 export default function AllPreferenceFoods({navigation}: any) {
-    const [userPreferences, setUserPreferences] = useState([]);
+    const [userPreferences, setUserPreferences] = useState<string[]>([]);
     const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-    const [filteredFoods, setFilteredFoods] = useState(foodData);
+    const [foodData, setFoodData] = useState<any[]>([]);
+    const [filteredFoods, setFilteredFoods] = useState<any[]>([]);
+    const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+
+    const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        const food = await getFood();
+        if (Array.isArray(food)) {
+            setFoodData(food);
+            setFilteredFoods(food);
+        }
+        setRefreshing(false);
+    }, []);
+    function BahtFormat(price: any) {
+        return new Intl.NumberFormat("th-TH", {style: "currency", currency: "THB", trailingZeroDisplay: "stripIfInteger"}).format(price);
+    }
+    useEffect(() => {
+        const loadFood = async () => {
+            try {
+                const food = await getFood();
+                if (Array.isArray(food)) {
+                    setFoodData(food);
+                    setFilteredFoods(food);
+                } else {
+                    setFoodData([]);
+                    setFilteredFoods([]);
+                }
+            } catch (e) {
+                console.error("Error fetching food data:", e);
+            }
+        };
+        loadFood();
+    }, []);
+
     const handleSearch = (query: string) => {
         setSearchQuery(query);
+
+        if (!foodData.length) return;
+
         if (query.trim() === "") {
-            setFilteredFoods(foodData.filter((food) => selectedFilters.length === 0 || selectedFilters.some((filter) => food.category.includes(filter))));
+            setFilteredFoods(foodData.filter((food) => selectedFilters.length === 0 || selectedFilters.some((filter) => food.category?.includes(filter))));
         } else {
             setFilteredFoods(
                 foodData.filter(
                     (food) =>
-                        food.name_eng.toLowerCase().includes(query.toLowerCase()) &&
-                        (selectedFilters.length === 0 || selectedFilters.some((filter) => food.category.includes(filter)))
+                        food.name?.toLowerCase().includes(query.toLowerCase()) &&
+                        (selectedFilters.length === 0 || selectedFilters.some((filter) => food.category?.includes(filter)))
                 )
             );
         }
     };
-
-    const toggleFilter = (filter: string) => {
-        let updatedFilters = [...selectedFilters];
-
-        if (updatedFilters.includes(filter)) {
-            updatedFilters = updatedFilters.filter((item) => item !== filter);
-        } else {
-            updatedFilters.push(filter);
-        }
-
-        setSelectedFilters(updatedFilters);
-
-        if (updatedFilters.length === 0) {
-            setFilteredFoods(foodData);
-        } else {
-            setFilteredFoods(foodData.filter((food) => updatedFilters.some((filter) => !food.category.includes(filter))));
-        }
-    };
     useEffect(() => {
-        if (userPreferences.length > 0) {
+        if (userPreferences.length > 0 && foodData.length > 0) {
             setSelectedFilters(userPreferences);
-            setFilteredFoods(foodData.filter((food) => userPreferences.some((filter) => !food.category.includes(filter))));
+            setFilteredFoods(foodData.filter((food) => userPreferences.some((filter) => !food.allergies?.includes(filter))));
         }
-    }, [userPreferences]);
+    }, [userPreferences, foodData]);
+
     useEffect(() => {
         const getPreferences = async () => {
             try {
                 const userId = await getUserId();
                 const userData = await getUserData({userId: userId});
-                setUserPreferences(userData?.allergies);
+                setUserPreferences(userData?.allergies || []);
             } catch (e) {
-                console.log(e);
+                console.error("Error fetching user preferences:", e);
             }
         };
         getPreferences();
     }, []);
+
     useEffect(() => {
         navigation.getParent()?.setOptions({tabBarStyle: {display: "none"}});
 
@@ -93,39 +112,21 @@ export default function AllPreferenceFoods({navigation}: any) {
                         <TextInput placeholder="Search Thailand Restaurant" style={{height: 40, flex: 1}} value={searchQuery} onChangeText={handleSearch} />
                     </View>
                 </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {/* Filter button */}
-                    {userPreferences.map((item, index) => (
-                        <TouchableOpacity
-                            activeOpacity={0.99}
-                            key={index}
-                            onPress={() => toggleFilter(item)}
-                            style={{
-                                width: 100,
-                                height: 40,
-                                backgroundColor: selectedFilters.includes(item) ? Colors.primary : "#fff",
-                                borderWidth: 1,
-                                borderColor: Colors.primary,
-                                borderRadius: 5,
-                                justifyContent: "center",
-                                alignItems: "center",
-                            }}
-                        >
-                            <Text style={{textAlign: "center", color: selectedFilters.includes(item) ? "#fff" : "#000"}}>{item}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
                 {filteredFoods.length > 0 ? (
-                    filteredFoods.map((food, index) => (
+                    filteredFoods.map((food) => (
                         <TouchableOpacity
-                            key={food.name_eng}
+                            key={food.name}
                             onPress={() =>
-                                navigation.navigate("Shop", {
-                                    name: food.name_eng,
-                                    img: food.img,
-                                    rating: food.rating,
+                                navigation.navigate("FoodDetail", {
+                                    name: food.name,
+                                    description: food.description,
+                                    price: food.price,
+                                    image_product: food.image,
+                                    name_restaurant: food.name_restaurant,
+                                    image_restaurant: food.image_restaurant,
+                                    merchantId: food.merchantId,
                                 })
                             }
                             style={{
@@ -139,55 +140,28 @@ export default function AllPreferenceFoods({navigation}: any) {
                             }}
                         >
                             <View style={{width: 100, height: 100}}>
-                                {food.verified && (
-                                    <View
-                                        style={{
-                                            position: "absolute",
-                                            top: -10,
-                                            right: -10,
-                                            zIndex: 2,
-                                            backgroundColor: "white",
-                                            padding: 4,
-                                            borderRadius: 50,
-                                            elevation: 5,
-                                            shadowColor: "#000",
-                                            shadowOffset: {width: 2, height: 2.5},
-                                            shadowOpacity: 0.4,
-                                            shadowRadius: 1,
-                                        }}
-                                    >
-                                        <MaterialIcons name="verified-user" size={24} color="green" />
-                                    </View>
-                                )}
-                                <Image source={{uri: food.img}} style={{width: 100, height: 100, borderRadius: 10}} />
+                                <Image source={{uri: food.image}} style={{width: 100, height: 100, borderRadius: 10}} />
                             </View>
                             <View style={{marginHorizontal: 10}}>
                                 <View style={{width: Dimensions.get("screen").width - 150}}>
                                     <Text style={{fontSize: 18, fontWeight: "bold"}} numberOfLines={1} ellipsizeMode="tail">
-                                        {food.name_eng}
+                                        {food.name}
                                     </Text>
                                 </View>
-
+                                <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>
+                                    <Ionicons name="star" size={16} color={"#FFD700"} />
+                                    <Text>{food.rating}</Text>
+                                </View>
                                 <View>
-                                    {/* {food.open ? (
-                                    <View style={{flexDirection: "column", gap: 4}}>
-                                        <Text style={{color: "green"}}>Open</Text>
-                                    </View>
-                                ) : (
-                                    <View style={{flexDirection: "row", gap: 4}}>
-                                        <Text style={{color: "red"}}>Close</Text>
-                                    </View>
-                                )} */}
-                                    <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>
-                                        <Ionicons name="star" size={16} color={"#FFD700"} />
-                                        <Text>{food.rating}</Text>
-                                    </View>
+                                    <Text style={{fontSize: 16, color: "green"}}>{BahtFormat(food.price)}</Text>
                                 </View>
                             </View>
                         </TouchableOpacity>
                     ))
                 ) : (
-                    <Text style={{fontSize: 18, color: "gray"}}>No food matches the filter</Text>
+                    <View style={{flex: 1, justifyContent: "center", alignItems: "center", height: "100%"}}>
+                        <Text style={{fontSize: 18, color: "gray", justifyContent: "center"}}>No food matches the filter</Text>
+                    </View>
                 )}
             </ScrollView>
         </SafeAreaView>

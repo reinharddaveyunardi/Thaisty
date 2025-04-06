@@ -1,36 +1,61 @@
 import {View, Text, ScrollView, TouchableOpacity, Image} from "react-native";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import {foodData} from "@/data/FoodData";
-import Animated from "react-native-reanimated";
+import {getFood} from "@/services/api";
+import {BahtFormat} from "@/utils/FormatCurrency";
+import SkeletonLoading from "./SkeletonLoading";
 
-export default function RecommendationSection({navigation, userPreferences}: any) {
-    const allergies = userPreferences ?? [];
+export default function RecommendationSection({navigation, userPreferences = []}: any) {
+    const [filteredFoods, setFilteredFoods] = useState<any[]>([]);
+    const [foodData, setFoodData] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    useEffect(() => {
+        const getRecommendationFood = async () => {
+            const food = await getFood();
+            if (Array.isArray(food)) {
+                setFoodData(food);
+            }
+        };
+        getRecommendationFood();
+    }, []);
 
-    const filteredFoods = foodData.filter((food) => {
-        return !food.category.some((category) => allergies.some((allergy: string) => category.toLowerCase().includes(allergy.toLowerCase())));
-    });
+    useEffect(() => {
+        if (userPreferences?.length > 0 && foodData.length > 0) {
+            setFilteredFoods(foodData.filter((food) => userPreferences.some((filter: any) => !food.allergies?.includes(filter))));
+            setIsLoading(false);
+        }
+    }, [userPreferences, foodData]);
     return (
         <ScrollView horizontal={true} contentContainerStyle={{gap: 16}} showsHorizontalScrollIndicator={false}>
-            {filteredFoods.length > 0 ? (
+            {isLoading ? (
+                <SkeletonLoading quantity={3} />
+            ) : filteredFoods.length > 0 ? (
                 filteredFoods.map((item, index) => (
                     <TouchableOpacity
                         key={index}
                         activeOpacity={0.99}
-                        onPress={() => navigation.navigate("FoodDetail", {name: item.name_eng, img: item.img, price: item.price, desc: item.desc_eng})}
-                        style={{gap: 12}}
+                        onPress={() =>
+                            navigation.navigate("FoodDetail", {
+                                name: item.name,
+                                image_product: item.image,
+                                description: item.description,
+                                price: item.price,
+                                merchantId: item.merchantId,
+                            })
+                        }
+                        style={{gap: 6}}
                     >
                         <View>
-                            <Image source={{uri: item.img}} style={{width: 180, height: 100, borderRadius: 10}} />
+                            <Image source={{uri: item.image}} style={{width: 180, height: 100, borderRadius: 10}} />
                         </View>
-                        <View style={{height: 0.2, backgroundColor: "#2d2d2d", width: "100%"}} />
+                        <View style={{height: 0.4, backgroundColor: "#2d2d2d", width: "100%"}} />
                         <View>
-                            <Text style={{fontSize: 16, fontWeight: "bold"}}>{item.name_eng}</Text>
+                            <Text style={{fontSize: 16, fontWeight: "bold"}}>{item.name}</Text>
                             <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>
                                 <Ionicons name="star" size={16} color={"#FFD700"} />
                                 <Text>{item.rating}</Text>
                             </View>
-                            <Text style={{fontSize: 16, fontWeight: "900", color: "#52BB60"}}>${Math.round(item.price * 0.03)}</Text>
+                            <Text style={{fontSize: 16, fontWeight: "900", color: "#52BB60"}}>{BahtFormat(item.price)}</Text>
                         </View>
                     </TouchableOpacity>
                 ))

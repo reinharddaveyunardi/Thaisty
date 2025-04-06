@@ -4,6 +4,8 @@ export const foodData = [
         name_indo: "Tom Yum",
         name_eng: "Spicy Shrimp Soup",
         name_restaurant: "Thai Seafood Restaurant",
+        img_restaurant:
+            "https://cdn.vox-cdn.com/thumbor/0T_I6MJU8_h33b9qnbCGLDWadQM=/0x0:4032x2696/1200x0/filters:focal(0x0:4032x2696):no_upscale()/cdn.vox-cdn.com/uploads/chorus_asset/file/24127296/ThaiMitrExt2.jpg",
         img: "https://media.istockphoto.com/id/1392660302/id/foto/tom-yam-kung-sup-udang-dan-lemon-dengan-jamur-makanan-thailand-dalam-tampilan-atas-mangkuk-kayu.jpg?s=612x612&w=0&k=20&c=vtCYCpRFc3oNmHZPv15R80toz4lg9et0dGZO2Di6BB0=",
         calories: 250,
         contain_milk: false,
@@ -24,6 +26,8 @@ export const foodData = [
         name_indo: "Pad Thai",
         name_eng: "Thai Stir-fried Noodles",
         name_restaurant: "Street Food Stall",
+        img_restaurant:
+            "https://cdn.vox-cdn.com/thumbor/0T_I6MJU8_h33b9qnbCGLDWadQM=/0x0:4032x2696/1200x0/filters:focal(0x0:4032x2696):no_upscale()/cdn.vox-cdn.com/uploads/chorus_asset/file/24127296/ThaiMitrExt2.jpg",
         img: "https://media.istockphoto.com/id/2154851080/id/foto/pad-thai-stir-fried-rice-noodles-with-shrimp-thai-food-style.jpg?s=612x612&w=0&k=20&c=4Gcc0o3kQmjDVfMaPJ0WiS-0XVbE00wBIY_HQUswwaI=",
         calories: 400,
         contain_milk: false,
@@ -45,6 +49,8 @@ export const foodData = [
         name_eng: "Green Curry",
         desc_eng: "Makanan khas Thailand dengan kuah kaldu yang gurih ini tidak hanya enak, tetapi juga bisa menghangatkan tubuh.",
         name_restaurant: "Thai Curry House",
+        img_restaurant:
+            "https://cdn.vox-cdn.com/thumbor/0T_I6MJU8_h33b9qnbCGLDWadQM=/0x0:4032x2696/1200x0/filters:focal(0x0:4032x2696):no_upscale()/cdn.vox-cdn.com/uploads/chorus_asset/file/24127296/ThaiMitrExt2.jpg",
         img: "https://media.istockphoto.com/id/928732432/id/foto/makanan-di-latar-belakang.jpg?s=612x612&w=0&k=20&c=NGnFyaMRINuXEkpk3RxNX_72zH1vvZ4x92NdDNeMhcQ=",
         calories: 350,
         contain_milk: true,
@@ -65,6 +71,8 @@ export const foodData = [
         name_indo: "Khao Man Gai",
         name_eng: "Hainanese Chicken Rice",
         name_restaurant: "Thai Chicken Rice Shop",
+        img_restaurant:
+            "https://cdn.vox-cdn.com/thumbor/0T_I6MJU8_h33b9qnbCGLDWadQM=/0x0:4032x2696/1200x0/filters:focal(0x0:4032x2696):no_upscale()/cdn.vox-cdn.com/uploads/chorus_asset/file/24127296/ThaiMitrExt2.jpg",
         img: "https://media.istockphoto.com/id/2191584003/id/foto/chicken-and-rice-with-coriander-and-cucumber-with-sauce-and-soup-in-a-white-plate-hainanese.jpg?s=612x612&w=0&k=20&c=XToiHR5Pzd8VjpX-GYjT8hsMSTy0Z5GIcLo-QpMZW7U=",
         calories: 550,
         contain_milk: false,
@@ -85,6 +93,8 @@ export const foodData = [
         name_indo: "Som Tum",
         name_eng: "Green Papaya Salad",
         name_restaurant: "Thai Street Food",
+        img_restaurant:
+            "https://cdn.vox-cdn.com/thumbor/0T_I6MJU8_h33b9qnbCGLDWadQM=/0x0:4032x2696/1200x0/filters:focal(0x0:4032x2696):no_upscale()/cdn.vox-cdn.com/uploads/chorus_asset/file/24127296/ThaiMitrExt2.jpg",
         img: "https://media.istockphoto.com/id/157375159/id/foto/seperti-inch.jpg?s=612x612&w=0&k=20&c=K3ANuJa3e_Df42QVhaEYgVwxFQVAZ5OWpPDO9_RV3is=",
         calories: 150,
         contain_milk: false,

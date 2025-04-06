@@ -5,29 +5,39 @@ import AuthInput from "./components/AuthInput";
 import {useEffect, useState} from "react";
 import CustomButton from "../components/Button";
 import {login} from "@/hook/useAuth";
-import {Ionicons} from "@expo/vector-icons";
-import BouncyCheckBox from "react-native-bouncy-checkbox";
 import {Colors} from "@/constant/Colors";
 import Loading from "../components/Loading";
-import {checkTokenValidity} from "@/services/CheckValidityToken";
 import {getUserId} from "@/services/SecureStore";
+import {getUserData} from "@/services/api";
 
 export default function LoginScreen() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [hidePassword, setHidePassword] = useState(true);
     const [popup, setPopup] = useState(false);
-    // const [isRemembered, setIsRemembered] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         setLoading(true);
         const checkAuth = async () => {
             const userId = await getUserId();
+            const userData = await getUserData({userId});
+            const userRole = userData?.role;
             if (!userId) {
                 router.push("/auth/LoginScreen");
-            } else {
-                router.push("/dashboard/DashboardScreen");
+            } else if (!userRole) {
+                const userId = await getUserId();
+                const userData = await getUserData({userId});
+                const userRole = userData?.role;
+                if (userRole === "customer") {
+                    router.replace("/dashboard/CustomerScreen");
+                } else if (userRole === "merchant") {
+                    router.replace("/dashboard/MerchantScreen");
+                } else if (userRole === "driver") {
+                    router.replace("/dashboard/DriverScreen");
+                } else {
+                    router.replace("/auth/LoginScreen");
+                }
             }
             setLoading(false);
         };
@@ -35,14 +45,17 @@ export default function LoginScreen() {
     }, []);
 
     const handleLogin = async () => {
-        router.push("/dashboard/DashboardScreen");
+        setLoading(true);
         if (!email.trim() || !password.trim()) {
             setPopup(true);
             return;
         }
         try {
-            const res = await login({email, password});
-            console.log("Login Success:", res);
+            await login({email, password});
+            console.log("Login Success");
+            setTimeout(() => {
+                router.push("/dashboard/DashboardScreen");
+            }, 3000);
         } catch (e) {
             console.log("Login Error:", e);
         }
@@ -99,17 +112,12 @@ export default function LoginScreen() {
                                             secureTextEntry={hidePassword}
                                             triggerSecureTextEntry={() => setHidePassword((previous) => !previous)}
                                         />
-                                        {/* <View style={{display: "flex", flexDirection: "row", alignItems: "center", width: "50%"}}>
-                                            <BouncyCheckBox
-                                                onPress={() => setIsRemembered((previous) => !previous)}
-                                                isChecked={isRemembered}
-                                                unFillColor="#fff"
-                                                fillColor={Colors.primary}
-                                                style={{width: "auto", marginRight: 8}}
-                                                textComponent={<Text style={{color: Colors.text, paddingLeft: 4}}>Remember me</Text>}
-                                            />
-                                        </View> */}
-                                        <CustomButton.Submit title="Login" onPress={handleLogin} disabled={false} loading={false} />
+                                        <CustomButton.Submit
+                                            title={loading ? "Loading..." : "Login"}
+                                            onPress={handleLogin}
+                                            disabled={loading ? true : false}
+                                            loading={false}
+                                        />
                                         <View style={{gap: 12}}>
                                             <View style={{display: "flex", alignItems: "center", flexDirection: "row"}}>
                                                 <Text>Don't have an account? </Text>

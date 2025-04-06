@@ -8,51 +8,37 @@ import ShopScreen from "./Search/Shop/[id]";
 import FoodScreen from "./Search/Food/[id]";
 import ProfileScreen from "./Profile/ProfileScreen";
 import AllPreferenceFoods from "./Search/PreferenceFoods/AllPreferenceFoods";
+import {CartProvider} from "@/contexts/CartProvider";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 export default function CustomerLayout() {
     return (
-        <Tab.Navigator
-            screenOptions={{
-                headerShown: false,
-                tabBarStyle: {
-                    position: "absolute",
-                    height: 60,
-                    width: "85%",
-                    elevation: 1,
-                    marginBottom: "3%",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderRadius: 20,
-                    marginHorizontal: 30,
-                    shadowColor: "#000",
-                    shadowOffset: {width: 0, height: 2},
-                    shadowOpacity: 0.1,
-                    shadowRadius: 1,
-                    borderWidth: 0.2,
-                    zIndex: 99,
-                },
-            }}
-        >
-            <Tab.Screen
-                name="Home"
-                component={Home}
-                options={{
-                    tabBarIcon: ({focused}) => <Ionicons name="home" size={24} color={focused ? "#44649c" : "#a0a0a0"} />,
-                    headerPressOpacity: 0,
-                    headerPressColor: "#fff",
+        <CartProvider>
+            <Tab.Navigator
+                screenOptions={{
+                    headerShown: false,
                 }}
-            />
-            <Tab.Screen
-                name="Chat"
-                component={ChatStack}
-                options={{
-                    tabBarIcon: ({focused}) => <Ionicons name="chatbubbles" size={24} color={focused ? "#44649c" : "#a0a0a0"} />,
-                }}
-            />
-        </Tab.Navigator>
+            >
+                <Tab.Screen
+                    name="Home"
+                    component={Home}
+                    options={{
+                        tabBarIcon: ({focused}) => <Ionicons name="home" size={24} color={focused ? "#44649c" : "#a0a0a0"} />,
+                        tabBarActiveTintColor: "#44649c",
+                    }}
+                />
+                <Tab.Screen
+                    name="Chat"
+                    component={ChatStack}
+                    options={{
+                        tabBarIcon: ({focused}) => <Ionicons name="chatbubbles" size={24} color={focused ? "#44649c" : "#a0a0a0"} />,
+                        tabBarActiveTintColor: "#44649c",
+                    }}
+                />
+            </Tab.Navigator>
+        </CartProvider>
     );
 }
 

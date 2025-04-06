@@ -1,9 +1,46 @@
 import {Colors} from "@/constant/Colors";
+import {useCart} from "@/contexts/CartProvider";
+import {getMerchant} from "@/services/api";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import {useEffect, useState} from "react";
-import {View, Text, StyleSheet, Modal, SafeAreaView, TouchableOpacity, ScrollView, StatusBar, Image} from "react-native";
+import {useEffect, useRef, useState} from "react";
+import {View, Text, StyleSheet, SafeAreaView, TouchableOpacity, StatusBar, Image, ActivityIndicator, Dimensions, Animated, Platform} from "react-native";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
+
+const {width} = Dimensions.get("window");
+const IMAGE_HEIGHT = 300;
 export default function FoodScreen({route, navigation}: any) {
     const [counter, setCounter] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const [merchant, setMerchant] = useState<any>(null);
+    const insets = useSafeAreaInsets();
+    const {addToCart, cart} = useCart();
+    const scrollY = useRef(new Animated.Value(0)).current;
+    const translateY = scrollY.interpolate({
+        inputRange: [0, IMAGE_HEIGHT],
+        outputRange: [0, -IMAGE_HEIGHT / 2],
+        extrapolate: "clamp",
+    });
+    const titleOpacity = scrollY.interpolate({
+        inputRange: [IMAGE_HEIGHT - 80, IMAGE_HEIGHT - 40],
+        outputRange: [0, 1],
+        extrapolate: "clamp",
+    });
+
+    const titleTranslateY = scrollY.interpolate({
+        inputRange: [IMAGE_HEIGHT - 80, IMAGE_HEIGHT - 40],
+        outputRange: [20, 0],
+        extrapolate: "clamp",
+    });
+    const titleFadeOutOpacity = scrollY.interpolate({
+        inputRange: [IMAGE_HEIGHT - 80, IMAGE_HEIGHT - 40],
+        outputRange: [1, 0],
+        extrapolate: "clamp",
+    });
+    const titleFadeOutTranslate = scrollY.interpolate({
+        inputRange: [IMAGE_HEIGHT - 80, IMAGE_HEIGHT - 40],
+        outputRange: [0, -10],
+        extrapolate: "clamp",
+    });
     useEffect(() => {
         navigation.getParent()?.setOptions({tabBarStyle: {display: "none"}});
 
@@ -15,31 +52,114 @@ export default function FoodScreen({route, navigation}: any) {
     function BahtFormat(price: any) {
         return new Intl.NumberFormat("th-TH", {style: "currency", currency: "THB", trailingZeroDisplay: "stripIfInteger"}).format(price);
     }
+    const handleAddToCart = () => {
+        setLoading(true);
+        addToCart({
+            name: name,
+            price: price,
+            quantity: counter,
+            restaurant: merchant.name,
+            img: image_product,
+        });
+        setLoading(false);
+    };
+    const {name, image_product, description, price, merchantId} = route.params;
+    useEffect(() => {
+        const getMerchantProfile = async () => {
+            try {
+                const merchantData = await getMerchant({merchantId: merchantId});
+                setMerchant(merchantData);
+            } catch (error) {
+                console.log(error);
+            }
+        };
 
-    const {name, img, rating, open, desc, price} = route.params;
+        getMerchantProfile();
+    }, []);
     return (
         <SafeAreaView style={{flex: 1, backgroundColor: "#fff"}}>
-            <StatusBar barStyle="dark-content" backgroundColor={"#fff"} />
-            <View style={{position: "absolute", top: "10%", left: 16, zIndex: 1}}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{backgroundColor: "#fff", padding: 8, borderRadius: 50}}>
+            <StatusBar barStyle="dark-content" backgroundColor={"white"} />
+            <Animated.View
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 2,
+                    paddingTop: insets.top + 20,
+                    paddingHorizontal: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                }}
+            >
+                <Animated.View
+                    style={{
+                        ...StyleSheet.absoluteFillObject,
+                        backgroundColor: "#fff",
+                        opacity: titleOpacity,
+                    }}
+                />
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    activeOpacity={0.7}
+                    style={{padding: 8, borderRadius: 50, flexDirection: "row", alignItems: "center"}}
+                >
                     <Ionicons name="chevron-back" size={24} color="black" />
                 </TouchableOpacity>
-            </View>
-            <ScrollView style={{backgroundColor: "#fff"}}>
-                <Image style={{width: "100%", height: 300}} source={{uri: img}} />
-                <View style={{backgroundColor: "#fff", padding: 16, bottom: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20}}>
-                    <View>
-                        <Text style={{fontSize: 24, fontWeight: "semibold"}}>{name}</Text>
-                        <View style={{width: "90%", height: 0.5, backgroundColor: "#2d2d2d", marginTop: 10}} />
-                        <Text style={{fontSize: 16, fontWeight: "semibold", marginTop: 10}}>Description</Text>
-                        <Text style={{fontSize: 16, fontWeight: "semibold", marginTop: 5, opacity: 0.7}}>{desc}</Text>
+                <Animated.Text
+                    style={{
+                        marginLeft: 12,
+                        fontSize: 18,
+                        fontWeight: "bold",
+                        opacity: titleOpacity,
+                        transform: [{translateY: titleTranslateY}],
+                    }}
+                    numberOfLines={1}
+                >
+                    {name}
+                </Animated.Text>
+            </Animated.View>
+
+            <Animated.Image source={{uri: image_product}} style={[Styles.headerImage, {transform: [{translateY}]}]} resizeMode="cover" />
+            <Animated.ScrollView
+                contentContainerStyle={{paddingTop: IMAGE_HEIGHT}}
+                scrollEventThrottle={16}
+                onScroll={Animated.event([{nativeEvent: {contentOffset: {y: scrollY}}}], {useNativeDriver: true})}
+            >
+                <View style={Styles.contentBox}>
+                    <Animated.Text
+                        style={[
+                            Styles.title,
+                            {
+                                opacity: titleFadeOutOpacity,
+                                transform: [{translateY: titleFadeOutTranslate}],
+                            },
+                        ]}
+                    >
+                        {name}
+                    </Animated.Text>
+                    <View style={Styles.divider} />
+                    <Text style={Styles.subTitle}>Description</Text>
+                    <Text style={Styles.description}>{description}</Text>
+
+                    {merchant && (
+                        <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate("Shop", {merchantId})} style={Styles.merchantBox}>
+                            <Image style={Styles.merchantImage} source={{uri: merchant.image}} />
+                            <Text>{merchant.name}</Text>
+                        </TouchableOpacity>
+                    )}
+                    <View style={[Styles.dummyBlock, {alignItems: "center", justifyContent: "center"}]}>
+                        <Text>Bahan Bahan</Text>
+                    </View>
+                    <View style={[Styles.dummyBlock, {alignItems: "center", justifyContent: "center", height: 500}]}>
+                        <Text>Scroll Test</Text>
                     </View>
                 </View>
-            </ScrollView>
+            </Animated.ScrollView>
             <View
                 style={{
                     position: "absolute",
-                    bottom: "5%",
+                    bottom: insets.bottom + 10,
                     width: "100%",
                     paddingHorizontal: "2%",
                     height: "auto",
@@ -64,7 +184,10 @@ export default function FoodScreen({route, navigation}: any) {
                 >
                     <View style={{flexDirection: "row", justifyContent: "space-between"}}>
                         <View>
-                            <Text>{BahtFormat(price * 33.91)}</Text>
+                            <Text>{BahtFormat(price)}</Text>
+                            {cart.map((item) => item.name).includes(name) && (
+                                <Text style={{color: "#000", fontSize: 12}}>Already Added to Cart: {cart.find((item) => item.name === name)?.quantity}</Text>
+                            )}
                         </View>
                         <View style={{flexDirection: "row", gap: 12, borderRadius: 5, backgroundColor: "rgba(0,0,0,0.1)", height: 30}}>
                             <TouchableOpacity
@@ -90,6 +213,7 @@ export default function FoodScreen({route, navigation}: any) {
                     </View>
                     <View>
                         <TouchableOpacity
+                            onPress={handleAddToCart}
                             style={{
                                 width: "100%",
                                 height: 40,
@@ -99,7 +223,13 @@ export default function FoodScreen({route, navigation}: any) {
                                 justifyContent: "center",
                             }}
                         >
-                            <Text style={{color: "#fff"}}>Add to Cart - {BahtFormat(counter * (price * 33.91))}</Text>
+                            {loading ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                                <View style={{flexDirection: "column", alignItems: "center"}}>
+                                    <Text style={{color: "#fff"}}>Add to Cart - {BahtFormat(price * counter)}</Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -146,5 +276,59 @@ const Styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 20,
         borderRadius: 5,
+    },
+    headerImage: {
+        position: "absolute",
+        width: width,
+        height: IMAGE_HEIGHT,
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 0,
+    },
+    contentBox: {
+        backgroundColor: "#fff",
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        marginTop: -20,
+        padding: 16,
+        paddingBottom: 100,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: "600",
+    },
+    subTitle: {
+        fontSize: 16,
+        fontWeight: "600",
+        marginTop: 10,
+    },
+    description: {
+        fontSize: 16,
+        opacity: 0.7,
+        marginTop: 5,
+    },
+    divider: {
+        width: "90%",
+        height: 0.5,
+        backgroundColor: "#2d2d2d",
+        marginTop: 10,
+    },
+    merchantBox: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 20,
+        gap: 10,
+    },
+    merchantImage: {
+        width: 40,
+        height: 40,
+        borderRadius: 40,
+    },
+    dummyBlock: {
+        height: 100,
+        backgroundColor: "red",
+        marginVertical: 10,
+        borderRadius: 10,
     },
 });

@@ -1,10 +1,10 @@
 import {auth} from "@/config/firebase";
 import {ValidationMessages} from "@/constant/Messages";
 import {removeItemFromAsyncStorage, saveItemToAsyncStorage} from "@/services/AsyncStorage";
-import {signInWithEmailAndPassword, createUserWithEmailAndPassword} from "firebase/auth";
+import {signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile} from "firebase/auth";
 import {setDoc, doc} from "firebase/firestore";
 import {firestore as db} from "@/config/firebase";
-import {saveUserId} from "@/services/SecureStore";
+import {getUserId, saveUserId} from "@/services/SecureStore";
 
 type loginProps = {
     email: string;
@@ -16,7 +16,14 @@ export const login = async ({email, password}: loginProps) => {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const userId = user.uid;
+        console.log("[DEBUG LOGIN] Login successful. User ID:", userId);
         await saveUserId(userId);
+        const storedUserId = await getUserId();
+        console.log("[DEBUG LOGIN] Retrieved User ID from SecureStore:", storedUserId);
+
+        if (!storedUserId) {
+            console.warn("[WARNING LOGIN] Failed to store user ID!");
+        }
     } catch (error: any) {
         let errorMessage = ValidationMessages.stillFailed;
         switch (error.code) {
@@ -36,6 +43,7 @@ export const login = async ({email, password}: loginProps) => {
                 errorMessage = ValidationMessages.invalidPassword;
                 break;
         }
+        console.error("[ERROR] Login failed:", errorMessage);
         throw new Error(errorMessage);
     }
 };
@@ -61,7 +69,7 @@ export const register = async ({email, password, fullName, allergies, address_on
             address_two: address_two,
             createdAt: new Date(),
         });
-
+        updateProfile(user, {displayName: fullName});
         console.log("User registered:", user.email);
     } catch (error: any) {
         console.error("Error registering user:", error.message);
