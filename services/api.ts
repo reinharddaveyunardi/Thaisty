@@ -1,5 +1,5 @@
 import {firestore} from "@/config/firebase";
-import {collection, doc, getDoc, getDocs} from "firebase/firestore";
+import {collection, doc, GeoPoint, getDoc, getDocs, setDoc} from "firebase/firestore";
 
 export const getUserData = async ({userId}: {userId: any}) => {
     try {
@@ -52,5 +52,25 @@ export const getMerchantMenu = async ({merchantId}: {merchantId: any}) => {
     } catch (error) {
         console.error("Error fetching menu:", error);
         throw error;
+    }
+};
+
+export const saveUserLocation = async ({userId, latitude, longitude, address}: {userId: any; latitude: any; longitude: any; address: any}) => {
+    console.log("Try to Saving location");
+    try {
+        console.log("Saving location to", userId);
+        const locationRef = doc(firestore, "users", userId);
+        console.log("SetDoc");
+        await setDoc(
+            locationRef,
+            {
+                location: new GeoPoint(latitude, longitude),
+                address: address,
+            },
+            {merge: true}
+        );
+        console.log("Location saved successfully");
+    } catch (e) {
+        console.log(e);
     }
 };

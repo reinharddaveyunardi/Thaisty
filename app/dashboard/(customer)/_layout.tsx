@@ -9,6 +9,9 @@ import FoodScreen from "./Search/Food/[id]";
 import ProfileScreen from "./Profile/ProfileScreen";
 import AllPreferenceFoods from "./Search/PreferenceFoods/AllPreferenceFoods";
 import {CartProvider} from "@/contexts/CartProvider";
+import SelectLocationScreen from "./SelectLocation/SelectLocationScreen";
+import CheckoutScreen from "./Checkout/CheckoutScreen";
+import OrderScreen from "./Orders/OrderScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -37,6 +40,14 @@ export default function CustomerLayout() {
                         tabBarActiveTintColor: "#44649c",
                     }}
                 />
+                <Tab.Screen
+                    name="Order"
+                    component={OrderScreen}
+                    options={{
+                        tabBarIcon: ({focused}) => <Ionicons name="bag" size={24} color={focused ? "#44649c" : "#a0a0a0"} />,
+                        tabBarActiveTintColor: "#44649c",
+                    }}
+                />
             </Tab.Navigator>
         </CartProvider>
     );
@@ -51,6 +62,8 @@ function Home() {
             <Stack.Screen name="FoodDetail" component={FoodScreen} />
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
             <Stack.Screen name="SeeAllScreen" component={AllPreferenceFoods} />
+            <Stack.Screen name="SelectLocationScreen" component={SelectLocationScreen} />
+            <Stack.Screen name="CheckoutScreen" component={CheckoutScreen} />
         </Stack.Navigator>
     );
 }

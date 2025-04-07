@@ -27,10 +27,7 @@ export default function CustomerScreen({navigation}: any) {
     }, []);
     const bottomSheetRef = useRef<BottomSheet>(null);
     const handlePresentModalPress = useCallback(() => {
-        bottomSheetRef.current?.snapToIndex(1);
-    }, []);
-    const handleSheetChanges = useCallback((index: number) => {
-        console.log("handleSheetChanges", index);
+        bottomSheetRef.current?.snapToIndex(4);
     }, []);
 
     const fetchUserData = async () => {
@@ -82,11 +79,15 @@ export default function CustomerScreen({navigation}: any) {
                                 <TouchableOpacity activeOpacity={0.99} onPress={() => navigation.navigate("ProfileScreen")}>
                                     <Text>{userData?.fullName}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={{flexDirection: "column", gap: 4, justifyContent: "center"}}>
+                                <TouchableOpacity
+                                    activeOpacity={0.99}
+                                    onPress={() => navigation.navigate("SelectLocationScreen")}
+                                    style={{flexDirection: "column", gap: 4, justifyContent: "center"}}
+                                >
                                     <View style={{flexDirection: "row", alignItems: "center", gap: 8}}>
                                         <FontAwesome6 name="location-dot" size={16} color={Colors.primary} />
                                         <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>
-                                            <Text>{userData?.address_one}</Text>
+                                            <Text>{userData?.address.length > 30 ? userData?.address.slice(0, 30) + "..." : userData?.address}</Text>
                                             <Ionicons name="chevron-down" size={16} color={Colors.primary} />
                                         </View>
                                     </View>
@@ -95,7 +96,35 @@ export default function CustomerScreen({navigation}: any) {
                         </View>
                         <View>
                             <TouchableOpacity onPress={handlePresentModalPress}>
-                                <Ionicons name="cart-outline" size={24} color="black" />
+                                <Ionicons name="cart-outline" size={32} color="black" />
+                                <View
+                                    style={{
+                                        position: "absolute",
+                                        top: -5,
+                                        right: -5,
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: 50,
+                                        backgroundColor: "#fff",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <View
+                                        style={{
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: 50,
+                                            backgroundColor: Colors.danger,
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        <Text style={{color: "#fff"}}>
+                                            {cart?.map((item: any) => item.quantity).reduce((a: number, b: number) => (a + b > 99 ? 99 : a + b), 0)}
+                                        </Text>
+                                    </View>
+                                </View>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -158,7 +187,6 @@ export default function CustomerScreen({navigation}: any) {
                         snapPoints={[100, 200, 300, 400]}
                         ref={bottomSheetRef}
                         enablePanDownToClose
-                        onChange={handleSheetChanges}
                         style={{shadowColor: "#000", shadowOffset: {width: 0, height: -1}, elevation: 5, zIndex: 2, shadowOpacity: 0.1}}
                     >
                         <BottomSheetScrollView style={styles.contentContainer}>
@@ -197,10 +225,22 @@ export default function CustomerScreen({navigation}: any) {
                                 ))
                             ) : (
                                 <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
-                                    <Text style={{color: Colors.primary}}>No items in cart</Text>
+                                    <Text style={{color: Colors.primary, textAlign: "center"}}>No items in cart</Text>
                                 </View>
                             )}
                         </BottomSheetScrollView>
+                        {cart.length > 0 && (
+                            <BottomSheetView style={{alignItems: "center", marginVertical: 16}}>
+                                <TouchableOpacity
+                                    style={{width: "90%", backgroundColor: Colors.primary, padding: 12, borderRadius: 10, alignItems: "center"}}
+                                    onPress={() => {
+                                        navigation.navigate("CheckoutScreen");
+                                    }}
+                                >
+                                    <Text>Checkout</Text>
+                                </TouchableOpacity>
+                            </BottomSheetView>
+                        )}
                     </BottomSheet>
                 </BottomSheetModalProvider>
             </GestureHandlerRootView>

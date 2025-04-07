@@ -1,10 +1,15 @@
-import {View, Text} from "react-native";
+import {View, Text, SafeAreaView, TouchableOpacity} from "react-native";
 import React from "react";
 
-export default function DriverScreen() {
+export default function DriverScreen({navigation}: any) {
     return (
-        <View>
-            <Text>DriverScreen</Text>
-        </View>
+        <SafeAreaView>
+            <View>
+                <Text>Beranda Driver</Text>
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate("SearchOrder")}>
+                <Text>Cari Orderan</Text>
+            </TouchableOpacity>
+        </SafeAreaView>
     );
 }

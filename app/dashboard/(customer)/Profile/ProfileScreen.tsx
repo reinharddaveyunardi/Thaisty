@@ -129,11 +129,25 @@ export default function ProfileScreen({navigation}: any) {
                             <Text>{userData?.fullName}</Text>
                         </View>
                     </View>
+                    <View style={{alignItems: "center"}}>
+                        <TouchableOpacity
+                            onPress={() => handleLogOut()}
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 4,
+                                width: "90%",
+                                backgroundColor: "red",
+                                padding: 16,
+                                borderRadius: 10,
+                                marginTop: 20,
+                            }}
+                        >
+                            <Text style={{color: "white"}}>Log out</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </ScrollView>
-            {/* <TouchableOpacity onPress={() => handleLogOut()}>
-                <Text>Log out</Text>
-            </TouchableOpacity> */}
         </SafeAreaView>
     );
 }

@@ -22,13 +22,16 @@ import {
 } from "react-native";
 import SwipeToPay from "./components/ui/SwipeToPay";
 import {useCart} from "@/contexts/CartProvider";
-
+interface QuantitiesState {
+    [key: string]: number;
+}
 export default function ShopScreen({route, navigation}: any) {
     const [modalVisible, setModalVisible] = useState(false);
     const [merchant, setMerchant] = useState<any>(null);
     const [merchantMenu, setMerchantMenu] = useState<any>([]);
     const [refreshing, setRefreshing] = useState(false);
-    const {cart, addToCart} = useCart();
+    const [quantities, setQuantities] = useState<QuantitiesState>({});
+    const {cart, addToCart, removeFromCart, updateQuantity} = useCart();
     const {merchantId} = route.params;
     const contacts = merchant?.contact ? merchant.contact[0] : {};
     const contactEntries = contacts ? Object.entries(contacts) : [];
@@ -73,6 +76,13 @@ export default function ShopScreen({route, navigation}: any) {
 
         getMenu();
     }, []);
+    useEffect(() => {
+        const syncedQuantities: QuantitiesState = {};
+        cart.forEach((item) => {
+            syncedQuantities[item.name] = item.quantity;
+        });
+        setQuantities(syncedQuantities);
+    }, [cart]);
     const groupedMenu = merchantMenu?.reduce((acc: any, item: any) => {
         if (!acc[item.category]) {
             acc[item.category] = [];
@@ -87,10 +97,34 @@ export default function ShopScreen({route, navigation}: any) {
             quantity: 1,
             restaurant: merchantName,
             img: image_product,
+            merchantId: merchantId,
         });
     };
+    const handleIncrease = (name: string) => {
+        const currentQuantity = quantities[name] ?? cart.find((item) => item.name === name)?.quantity ?? 0;
+        const newQuantity = currentQuantity + 1;
+
+        setQuantities((prev) => ({
+            ...prev,
+            [name]: newQuantity,
+        }));
+
+        updateQuantity(name, newQuantity);
+    };
+
+    const handleDecrease = (name: string) => {
+        const currentQuantity = quantities[name] ?? cart.find((item) => item.name === name)?.quantity ?? 0;
+        const newQuantity = Math.max(currentQuantity - 1, 0);
+
+        setQuantities((prev) => ({
+            ...prev,
+            [name]: newQuantity,
+        }));
+
+        updateQuantity(name, newQuantity);
+    };
     return (
-        <SafeAreaView>
+        <SafeAreaView style={{backgroundColor: "#fff"}}>
             <StatusBar barStyle="dark-content" backgroundColor={"#fff"} />
             <View style={{width: "100%", padding: 16, backgroundColor: "#fff"}}>
                 <View>
@@ -147,7 +181,7 @@ export default function ShopScreen({route, navigation}: any) {
                                         </Modal>
                                     </View>
                                 </View>
-                                <Text style={{fontSize: 12, fontWeight: "light"}}>{merchant?.location}</Text>
+                                <Text style={{fontSize: 12, fontWeight: "light"}}>{merchant?.address}</Text>
                                 <View style={{width: "100%", height: 1, backgroundColor: "#ccc"}} />
                             </View>
                             <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>
@@ -170,6 +204,7 @@ export default function ShopScreen({route, navigation}: any) {
                                             name: item.name,
                                             price: item.price,
                                             image_product: item.image,
+                                            description: item.description,
                                             merchantId: merchantId,
                                         })
                                     }
@@ -218,18 +253,56 @@ export default function ShopScreen({route, navigation}: any) {
                                                 <Text>{item.rating}</Text>
                                             </View>
                                             <Text>{BahtFormat(item.price)}</Text>
-                                            <TouchableOpacity
-                                                onPress={() =>
-                                                    handleAddToCart({
-                                                        name: item.name,
-                                                        image_product: item.image,
-                                                        price: item.price,
-                                                        merchantName: merchant.name,
-                                                    })
-                                                }
-                                            >
-                                                <Ionicons name="cart-outline" size={24} color="black" />
-                                            </TouchableOpacity>
+                                            {cart.some((cartItem) => cartItem.name === item.name) ? (
+                                                <View
+                                                    style={{
+                                                        flexDirection: "row",
+                                                        gap: 12,
+                                                        borderRadius: 5,
+                                                        backgroundColor: "rgba(0,0,0,0.1)",
+                                                        height: 30,
+                                                        width: 95,
+                                                    }}
+                                                >
+                                                    <View style={[Styles.counterBtn, {borderTopLeftRadius: 5, borderBottomLeftRadius: 5}]}>
+                                                        {quantities[item.name] < 2 ? (
+                                                            <TouchableOpacity onPress={() => removeFromCart(item.name)}>
+                                                                <Ionicons name="trash" size={20} color="red" />
+                                                            </TouchableOpacity>
+                                                        ) : (
+                                                            <TouchableOpacity onPress={() => handleDecrease(item.name)}>
+                                                                <Ionicons name="remove" size={20} color={Colors.primary} />
+                                                            </TouchableOpacity>
+                                                        )}
+                                                    </View>
+                                                    <View style={{flexDirection: "row", alignItems: "center", gap: 10}}>
+                                                        <Text>
+                                                            {quantities[item.name] || cart.find((cartItem) => cartItem.name === item.name)?.quantity || 1}
+                                                        </Text>
+                                                    </View>
+                                                    <TouchableOpacity
+                                                        onPress={() => handleIncrease(item.name)}
+                                                        style={[Styles.counterBtn, {borderTopRightRadius: 5, borderBottomRightRadius: 5}]}
+                                                    >
+                                                        <View>
+                                                            <Ionicons name="add" size={20} color={Colors.primary} />
+                                                        </View>
+                                                    </TouchableOpacity>
+                                                </View>
+                                            ) : (
+                                                <TouchableOpacity
+                                                    onPress={() =>
+                                                        handleAddToCart({
+                                                            name: item.name,
+                                                            image_product: item.image,
+                                                            price: item.price,
+                                                            merchantName: merchant.name,
+                                                        })
+                                                    }
+                                                >
+                                                    <Ionicons name="cart-outline" size={24} color="black" />
+                                                </TouchableOpacity>
+                                            )}
                                         </View>
                                     </View>
                                 </TouchableOpacity>
@@ -239,6 +312,11 @@ export default function ShopScreen({route, navigation}: any) {
                 ) : (
                     <Text style={{textAlign: "center", padding: 20}}>No menu available</Text>
                 )}
+                {cart.map((item) => (
+                    <Text key={item.name}>
+                        {item.name} - Quantity: {item.quantity}
+                    </Text>
+                ))}
             </ScrollView>
         </SafeAreaView>
     );
@@ -250,6 +328,13 @@ const Styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: "rgba(0,0,0,0.1)",
+    },
+    counterBtn: {
+        width: 30,
+        height: 30,
+        borderRadius: 0,
+        justifyContent: "center",
+        alignItems: "center",
     },
     modalContainer: {
         width: "80%",
@@ -268,13 +353,6 @@ const Styles = StyleSheet.create({
         alignItems: "center",
         gap: 5,
         marginVertical: 5,
-    },
-    counterBtn: {
-        width: 30,
-        height: 30,
-        borderRadius: 0,
-        justifyContent: "center",
-        alignItems: "center",
     },
     closeButton: {
         marginTop: 15,

@@ -53,7 +53,7 @@ export default function SearchScreen({navigation}: any) {
                         <Ionicons name="search" size={24} color="black" />
                         <TextInput
                             placeholder="Search Thailand Restaurant"
-                            placeholderTextColor={"#ccc"}
+                            placeholderTextColor={"#2d2d2d"}
                             style={{height: 40, flex: 1}}
                             value={searchQuery}
                             onChangeText={setSearchQuery}

@@ -54,13 +54,16 @@ export default function FoodScreen({route, navigation}: any) {
     }
     const handleAddToCart = () => {
         setLoading(true);
+
         addToCart({
             name: name,
             price: price,
             quantity: counter,
-            restaurant: merchant.name,
+            restaurant: merchant?.name,
             img: image_product,
+            merchantId: merchantId,
         });
+
         setLoading(false);
     };
     const {name, image_product, description, price, merchantId} = route.params;
@@ -76,6 +79,13 @@ export default function FoodScreen({route, navigation}: any) {
 
         getMerchantProfile();
     }, []);
+    const existingCartItem = cart.find((item) => item.name === name);
+
+    useEffect(() => {
+        if (existingCartItem) {
+            setCounter(existingCartItem.quantity);
+        }
+    }, [existingCartItem]);
     return (
         <SafeAreaView style={{flex: 1, backgroundColor: "#fff"}}>
             <StatusBar barStyle="dark-content" backgroundColor={"white"} />
@@ -145,7 +155,7 @@ export default function FoodScreen({route, navigation}: any) {
                     {merchant && (
                         <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate("Shop", {merchantId})} style={Styles.merchantBox}>
                             <Image style={Styles.merchantImage} source={{uri: merchant.image}} />
-                            <Text>{merchant.name}</Text>
+                            <Text>{merchant?.name}</Text>
                         </TouchableOpacity>
                     )}
                     <View style={[Styles.dummyBlock, {alignItems: "center", justifyContent: "center"}]}>
@@ -185,9 +195,7 @@ export default function FoodScreen({route, navigation}: any) {
                     <View style={{flexDirection: "row", justifyContent: "space-between"}}>
                         <View>
                             <Text>{BahtFormat(price)}</Text>
-                            {cart.map((item) => item.name).includes(name) && (
-                                <Text style={{color: "#000", fontSize: 12}}>Already Added to Cart: {cart.find((item) => item.name === name)?.quantity}</Text>
-                            )}
+                            {existingCartItem && <Text style={{color: "#000", fontSize: 12}}>Already in Cart: {existingCartItem.quantity}</Text>}
                         </View>
                         <View style={{flexDirection: "row", gap: 12, borderRadius: 5, backgroundColor: "rgba(0,0,0,0.1)", height: 30}}>
                             <TouchableOpacity

@@ -5,6 +5,7 @@ type CartItem = {
     quantity: number;
     img: string;
     restaurant: string;
+    merchantId: string;
 };
 type CartContextType = {
     cart: CartItem[];
@@ -12,6 +13,7 @@ type CartContextType = {
     removeFromCart: (name: string) => void;
     updateQuantity: (name: string, quantity: number) => void;
     getTotalPrice: () => number;
+    clearCart: () => void;
 };
 const CartContext = createContext<CartContextType | undefined>(undefined);
 export const useCart = (): CartContextType => {
@@ -31,7 +33,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
         setCart((prevCart) => {
             const existingItem = prevCart.find((cartItem) => cartItem.name === item.name);
             if (existingItem) {
-                return prevCart.map((cartItem) => (cartItem.name === item.name ? {...cartItem, quantity: cartItem.quantity + item.quantity} : cartItem));
+                return prevCart.map((cartItem) => (cartItem.name === item.name ? {...cartItem, quantity: item.quantity} : cartItem));
             }
             return [...prevCart, item];
         });
@@ -45,5 +47,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
     const getTotalPrice = () => {
         return cart.reduce((total, item) => total + item.price * item.quantity, 0);
     };
-    return <CartContext.Provider value={{cart, addToCart, removeFromCart, updateQuantity, getTotalPrice}}>{children}</CartContext.Provider>;
+    const clearCart = () => {
+        setCart([]);
+    };
+    return <CartContext.Provider value={{cart, addToCart, removeFromCart, updateQuantity, getTotalPrice, clearCart}}>{children}</CartContext.Provider>;
 };
