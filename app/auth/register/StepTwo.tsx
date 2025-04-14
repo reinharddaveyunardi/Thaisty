@@ -78,7 +78,7 @@ export default function StepTwo({nextStep, prevStep, selectedAllergies, setSelec
                     style={{backgroundColor: Colors.primary, padding: 10, height: 50, alignItems: "center", justifyContent: "center", borderRadius: 10}}
                     onPress={onFinish}
                 >
-                    <Text style={{color: "white"}}>Next</Text>
+                    <Text style={{color: "white"}}>Register</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={prevStep}

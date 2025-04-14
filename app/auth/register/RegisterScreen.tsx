@@ -7,6 +7,7 @@ import {Colors} from "@/constant/Colors";
 import {Ionicons} from "@expo/vector-icons";
 import {useRouter} from "expo-router";
 import {register} from "@/hook/useAuth";
+import {RegisterCustomers} from "@/services/api";
 
 export default function RegisterScreen() {
     const [fullName, setFullName] = useState("");
@@ -28,7 +29,7 @@ export default function RegisterScreen() {
     const handleRegister = async () => {
         setLoading(true);
         try {
-            await register({email, password, fullName, allergies: selectedAllergies, address_one: "", address_two: ""});
+            await RegisterCustomers({email, password, fullName, allergies: selectedAllergies});
             router.push("/auth/LoginScreen");
         } catch (error) {
             console.error("Registration Error:", error);

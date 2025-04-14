@@ -28,6 +28,10 @@ export default function CustomerScreen({navigation}: any) {
     const bottomSheetRef = useRef<BottomSheet>(null);
     const handlePresentModalPress = useCallback(() => {
         bottomSheetRef.current?.snapToIndex(4);
+
+        if (cart.length == 0) {
+            bottomSheetRef.current?.close();
+        }
     }, []);
 
     const fetchUserData = async () => {
@@ -87,7 +91,7 @@ export default function CustomerScreen({navigation}: any) {
                                     <View style={{flexDirection: "row", alignItems: "center", gap: 8}}>
                                         <FontAwesome6 name="location-dot" size={16} color={Colors.primary} />
                                         <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>
-                                            <Text>{userData?.address.length > 30 ? userData?.address.slice(0, 30) + "..." : userData?.address}</Text>
+                                            <Text>{userData?.address.length > 30 ? userData?.address.slice(0, 30) + "..." : null}</Text>
                                             <Ionicons name="chevron-down" size={16} color={Colors.primary} />
                                         </View>
                                     </View>
@@ -106,6 +110,7 @@ export default function CustomerScreen({navigation}: any) {
                                         height: 24,
                                         borderRadius: 50,
                                         backgroundColor: "#fff",
+                                        display: cart?.length > 0 ? "flex" : "none",
                                         alignItems: "center",
                                         justifyContent: "center",
                                     }}
@@ -237,7 +242,7 @@ export default function CustomerScreen({navigation}: any) {
                                         navigation.navigate("CheckoutScreen");
                                     }}
                                 >
-                                    <Text>Checkout</Text>
+                                    <Text style={{color: "white"}}>Checkout</Text>
                                 </TouchableOpacity>
                             </BottomSheetView>
                         )}

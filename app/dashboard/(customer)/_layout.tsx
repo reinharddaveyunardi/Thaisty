@@ -12,6 +12,8 @@ import {CartProvider} from "@/contexts/CartProvider";
 import SelectLocationScreen from "./SelectLocation/SelectLocationScreen";
 import CheckoutScreen from "./Checkout/CheckoutScreen";
 import OrderScreen from "./Orders/OrderScreen";
+import OrderId from "./Orders/[orderId]";
+import OrderStack from "./Orders/_layout";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -42,7 +44,7 @@ export default function CustomerLayout() {
                 />
                 <Tab.Screen
                     name="Order"
-                    component={OrderScreen}
+                    component={OrderStack}
                     options={{
                         tabBarIcon: ({focused}) => <Ionicons name="bag" size={24} color={focused ? "#44649c" : "#a0a0a0"} />,
                         tabBarActiveTintColor: "#44649c",
@@ -64,6 +66,7 @@ function Home() {
             <Stack.Screen name="SeeAllScreen" component={AllPreferenceFoods} />
             <Stack.Screen name="SelectLocationScreen" component={SelectLocationScreen} />
             <Stack.Screen name="CheckoutScreen" component={CheckoutScreen} />
+            <Stack.Screen name="OngoingOrder" component={OrderId} />
         </Stack.Navigator>
     );
 }

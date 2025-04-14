@@ -1,15 +1,16 @@
+import {Colors} from "@/constant/Colors";
 import {BahtFormat} from "@/utils/FormatCurrency";
 import React from "react";
 import {View, Text, StyleSheet, TouchableOpacity} from "react-native";
 
-export default function OrderCard({order, onAccept}: {order: any; onAccept: () => void}) {
+export default function OrderCard({order, seeDetail}: {order: any; seeDetail: () => void}) {
     return (
         <View style={styles.card}>
             <Text>Customer name: {order.customerName || "Tidak diketahui"}</Text>
-            <Text style={styles.text}>Alamat: {order.address || "Tidak diketahui"}</Text>
-            <Text style={styles.text}>Total: {BahtFormat(order.total)}</Text>
-            <TouchableOpacity style={styles.button} onPress={onAccept}>
-                <Text style={styles.buttonText}>Ambil Order</Text>
+            <Text style={styles.text}>Alamat: {order.customerAddress || "Tidak diketahui"}</Text>
+            <Text style={styles.text}>Total: {BahtFormat(order.fee)}</Text>
+            <TouchableOpacity style={styles.button} onPress={seeDetail}>
+                <Text style={styles.buttonText}>Lihat Detail Order</Text>
             </TouchableOpacity>
         </View>
     );
@@ -21,7 +22,7 @@ const styles = StyleSheet.create({
         marginVertical: 8,
         marginHorizontal: 16,
         borderRadius: 12,
-        backgroundColor: "#f2f2f2",
+        backgroundColor: "#fff",
         shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowOffset: {width: 0, height: 2},
@@ -30,7 +31,7 @@ const styles = StyleSheet.create({
     },
     text: {fontSize: 16, marginBottom: 8},
     button: {
-        backgroundColor: "#1e90ff",
+        backgroundColor: Colors.primary,
         padding: 12,
         borderRadius: 8,
     },

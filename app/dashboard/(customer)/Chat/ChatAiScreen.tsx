@@ -22,7 +22,6 @@ export default function ChatAiScreen({navigation}: any) {
     const [messages, setMessages] = useState<{sender: string; text: string}[]>([]);
     const [prompt, setPrompt] = useState("");
     const [loading, setLoading] = useState(false);
-    const dotAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         navigation.getParent()?.setOptions({tabBarStyle: {display: "none"}});

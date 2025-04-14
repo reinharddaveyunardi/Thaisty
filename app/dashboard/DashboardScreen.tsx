@@ -8,47 +8,40 @@ import {getUserId} from "@/services/SecureStore";
 export default function DashboardScreen() {
     const router = useRouter();
     const authState = useAuth();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     useEffect(() => {
-        setLoading(true);
         const checkAuth = async () => {
             const userId = await getUserId();
-            const userData = await getUserData({userId});
-            const userRole = userData?.role;
-            console.log("First Try, User role:", userRole);
             if (!userId) {
                 router.push("/auth/LoginScreen");
-            } else if (!userRole) {
+                return;
+            }
+            const userData = await getUserData({userId});
+            const role = userData?.role;
+            setUserRole(role);
+
+            if (!role) {
                 console.log("User role not found, still trying...");
-                const userId = await getUserId();
-                const userData = await getUserData({userId});
-                const userRole = userData?.role;
-                console.log("Second Try, User role:", userRole);
-                if (userRole === "customer") {
-                    router.replace("/dashboard/CustomerScreen");
-                } else if (userRole === "merchant") {
-                    router.replace("/dashboard/MerchantScreen");
-                } else if (userRole === "driver") {
-                    router.replace("/dashboard/DriverScreen");
-                } else {
-                    router.replace("/auth/LoginScreen");
-                }
-            } else if (userRole === "customer") {
+                return;
+            }
+            if (role === "customer") {
                 router.replace("/dashboard/CustomerScreen");
-            } else if (userRole === "merchant") {
+            } else if (role === "merchant") {
                 router.replace("/dashboard/MerchantScreen");
-            } else if (userRole === "driver") {
+            } else if (role === "driver") {
                 router.replace("/dashboard/DriverScreen");
             } else {
                 router.replace("/auth/LoginScreen");
             }
             setLoading(false);
         };
+
         checkAuth();
     }, []);
 
-    if (authState === null || authState.loading) {
+    if (loading || authState.loading) {
         return (
             <SafeAreaView style={{flex: 1, backgroundColor: "#fff", height: "100%", width: "100%", alignItems: "center", justifyContent: "center"}}>
                 <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
@@ -58,5 +51,6 @@ export default function DashboardScreen() {
             </SafeAreaView>
         );
     }
+
     return <Stack />;
 }

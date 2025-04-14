@@ -1,12 +1,14 @@
 import React, {useEffect, useState} from "react";
-import {View, Text, FlatList, ActivityIndicator, StyleSheet, RefreshControl, SafeAreaView} from "react-native";
+import {View, Text, FlatList, ActivityIndicator, StyleSheet, RefreshControl, SafeAreaView, TouchableOpacity} from "react-native";
 import {collection, getDocs, query, where} from "firebase/firestore";
 import {auth, firestore} from "@/config/firebase";
 import {useAuth} from "@/contexts/AuthProvider";
 import {getUserId} from "@/services/SecureStore";
 import {BahtFormat} from "@/utils/FormatCurrency";
+import {useRouter} from "expo-router";
+import {Colors} from "@/constant/Colors";
 
-export default function OrderScreen() {
+export default function OrderScreen({navigation}: any) {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -20,10 +22,10 @@ export default function OrderScreen() {
                 return "Diterima";
             case "rejected":
                 return "Ditolak";
-            case "delivering":
-                return "Dalam Pengiriman";
-            case "delivered":
-                return "Dalam Pengiriman";
+            case "ongoing_to_customer":
+                return "Dalam Perjalanan";
+            case "finished":
+                return "Selesai";
             default:
                 return status;
         }
@@ -49,8 +51,9 @@ export default function OrderScreen() {
                 setLoading(false);
             }
         };
-
-        fetchOrders();
+        setInterval(() => {
+            fetchOrders();
+        }, 5000);
     }, [orders]);
 
     if (orders.length === 0) {
@@ -60,7 +63,9 @@ export default function OrderScreen() {
             </View>
         );
     }
-
+    const buttonHandler = () => {
+        navigation.navigate(`OngoingOrder`, {orderId: orders[0].id});
+    };
     return (
         <SafeAreaView style={styles.container}>
             <FlatList
@@ -72,6 +77,13 @@ export default function OrderScreen() {
                         <Text>Alamat: {item.address}</Text>
                         <Text>Total: {BahtFormat(item.total)}</Text>
                         <Text>Driver: {item.driverName || "Driver not assigned"}</Text>
+                        {item.status === "looking_for_driver" || item.status === "ongoing_to_customer" ? (
+                            <View>
+                                <TouchableOpacity onPress={buttonHandler} style={{backgroundColor: Colors.primary, padding: 8, borderRadius: 4, marginTop: 8}}>
+                                    <Text style={{color: "#fff"}}>Track</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : null}
                     </View>
                 )}
             />

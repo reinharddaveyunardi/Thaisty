@@ -4,6 +4,7 @@ import {View} from "react-native";
 import * as SecureStore from "expo-secure-store";
 import Loading from "./components/Loading";
 import {getUserId} from "@/services/SecureStore";
+import {registerForPushNotificationsAsync} from "@/hook/usePushNotification";
 
 export default function Index() {
     const router = useRouter();

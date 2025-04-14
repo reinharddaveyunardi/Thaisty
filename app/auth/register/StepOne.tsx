@@ -11,12 +11,10 @@ interface StepOneProps {
     setEmail: (email: string) => void;
     password: string;
     setPassword: (password: string) => void;
-    confirmPassword: string;
-    setConfirmPassword: (confirmPassword: string) => void;
     nextStep: () => void;
 }
 
-export default function StepOne({nextStep, fullName, email, password, confirmPassword, setFullName, setEmail, setPassword, setConfirmPassword}: StepOneProps) {
+export default function StepOne({nextStep, fullName, email, password, setFullName, setEmail, setPassword}: StepOneProps) {
     const [popup, setPopup] = useState(false);
     const [popupText, setPopupText] = useState("");
     const passwordRules = ValidatePassword(password);

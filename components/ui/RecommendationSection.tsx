@@ -11,9 +11,11 @@ export default function RecommendationSection({navigation, userPreferences = []}
     const [isLoading, setIsLoading] = useState(true);
     useEffect(() => {
         const getRecommendationFood = async () => {
+            setIsLoading(true);
             const food = await getFood();
             if (Array.isArray(food)) {
                 setFoodData(food);
+                setIsLoading(false);
             }
         };
         getRecommendationFood();
@@ -23,6 +25,8 @@ export default function RecommendationSection({navigation, userPreferences = []}
         if (userPreferences?.length > 0 && foodData.length > 0) {
             setFilteredFoods(foodData.filter((food) => userPreferences.some((filter: any) => !food.allergies?.includes(filter))));
             setIsLoading(false);
+        } else {
+            setFilteredFoods(foodData);
         }
     }, [userPreferences, foodData]);
     return (

@@ -1,12 +1,57 @@
-import {View, Text} from "react-native";
-import React from "react";
+import {View, Text, Animated, Easing} from "react-native";
+import React, {useEffect, useRef} from "react";
+import {SkeletonProps} from "@/interfaces/Skeleton";
 
-export default function SkeletonLoading({quantity}: {quantity: number}) {
-    return [...Array(quantity)].map((_, index) => (
-        <View key={index} style={{width: 180, height: 150, backgroundColor: "#E0E0E0", borderRadius: 10, padding: 10}}>
-            <View style={{width: "100%", height: 100, backgroundColor: "#C0C0C0", borderRadius: 10}} />
-            <View style={{height: 8, backgroundColor: "#C0C0C0", marginTop: 8, width: "70%"}} />
-            <View style={{height: 8, backgroundColor: "#C0C0C0", marginTop: 4, width: "50%"}} />
+export default function Skeleton({width, height, borderRadius, style, speed}: SkeletonProps) {
+    const shimmerAnimation = new Animated.Value(0);
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.timing(shimmerAnimation, {
+                toValue: 1,
+                duration: 1000,
+                useNativeDriver: true,
+                easing: Easing.linear,
+            })
+        ).start();
+    }, [shimmerAnimation]);
+
+    const translateXSlow = shimmerAnimation.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-100, 800],
+    });
+
+    const translateXNormal = shimmerAnimation.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-100, 400],
+    });
+
+    const translateXFast = shimmerAnimation.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-100, 200],
+    });
+    return (
+        <View
+            style={[
+                {
+                    width,
+                    height,
+                    borderRadius,
+                    backgroundColor: "#e1e9ee",
+                    overflow: "hidden",
+                },
+                style,
+            ]}
+        >
+            <Animated.View
+                style={{
+                    width: "50%",
+                    height: "100%",
+                    backgroundColor: "rgba(0,0,0,0.1)",
+                    transform: [{translateX: speed === "slow" ? translateXSlow : speed === "normal" ? translateXNormal : translateXFast}],
+                    opacity: 0.6,
+                }}
+            />
         </View>
-    ));
+    );
 }
