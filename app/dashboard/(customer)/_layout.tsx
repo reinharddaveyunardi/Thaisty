@@ -14,6 +14,9 @@ import CheckoutScreen from "./Checkout/CheckoutScreen";
 import OrderScreen from "./Orders/OrderScreen";
 import OrderId from "./Orders/[orderId]";
 import OrderStack from "./Orders/_layout";
+import SavedLocationScreen from "./SelectLocation/SavedLocationScreen";
+import EditLocationScreen from "./SelectLocation/EditLocationScreen";
+import TopupScreen from "./TopUp/TopupScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -65,8 +68,11 @@ function Home() {
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
             <Stack.Screen name="SeeAllScreen" component={AllPreferenceFoods} />
             <Stack.Screen name="SelectLocationScreen" component={SelectLocationScreen} />
+            <Stack.Screen name="SavedLocationScreen" component={SavedLocationScreen} />
+            <Stack.Screen name="EditLocationScreen" component={EditLocationScreen} />
             <Stack.Screen name="CheckoutScreen" component={CheckoutScreen} />
             <Stack.Screen name="OngoingOrder" component={OrderId} />
+            <Stack.Screen name="Topup" component={TopupScreen} />
         </Stack.Navigator>
     );
 }

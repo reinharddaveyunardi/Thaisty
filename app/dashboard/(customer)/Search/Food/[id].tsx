@@ -1,19 +1,40 @@
+import DashedLine from "@/components/ui/Dashline";
+import Skeleton from "@/components/ui/SkeletonLoading";
 import {Colors} from "@/constant/Colors";
 import {useCart} from "@/contexts/CartProvider";
-import {getMerchant} from "@/services/api";
+import {getMenuIngredients, getMerchant, getUserData} from "@/services/api";
+import {getUserId} from "@/services/SecureStore";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import {useEffect, useRef, useState} from "react";
-import {View, Text, StyleSheet, SafeAreaView, TouchableOpacity, StatusBar, Image, ActivityIndicator, Dimensions, Animated, Platform} from "react-native";
+import {useCallback, useEffect, useRef, useState} from "react";
+import {
+    View,
+    Text,
+    StyleSheet,
+    SafeAreaView,
+    TouchableOpacity,
+    StatusBar,
+    Image,
+    ActivityIndicator,
+    Dimensions,
+    Animated,
+    Platform,
+    RefreshControl,
+    Modal,
+} from "react-native";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 const {width} = Dimensions.get("window");
 const IMAGE_HEIGHT = 300;
 export default function FoodScreen({route, navigation}: any) {
     const [counter, setCounter] = useState(1);
+    const [showAllergyWarning, setShowAllergyWarning] = useState(false);
+    const [canProceed, setCanProceed] = useState(false);
     const [loading, setLoading] = useState(false);
     const [merchant, setMerchant] = useState<any>(null);
+    const [ingredient, setIngredient] = useState<any | null>(null);
+    const [userData, setUserData] = useState<any | null>(null);
     const insets = useSafeAreaInsets();
-    const {addToCart, cart} = useCart();
+    const {addToCart, cart, removeFromCart} = useCart();
     const scrollY = useRef(new Animated.Value(0)).current;
     const translateY = scrollY.interpolate({
         inputRange: [0, IMAGE_HEIGHT],
@@ -53,8 +74,13 @@ export default function FoodScreen({route, navigation}: any) {
         return new Intl.NumberFormat("th-TH", {style: "currency", currency: "THB", trailingZeroDisplay: "stripIfInteger"}).format(price);
     }
     const handleAddToCart = () => {
-        setLoading(true);
+        const containsAllergy = ingredient?.some((item: any) => userData?.allergies?.includes(item.name));
+        if (containsAllergy && !canProceed) {
+            setShowAllergyWarning(true);
+            return;
+        }
 
+        setLoading(true);
         addToCart({
             name: name,
             price: price,
@@ -65,12 +91,15 @@ export default function FoodScreen({route, navigation}: any) {
         });
 
         setLoading(false);
+        setCanProceed(false);
     };
-    const {name, image_product, description, price, merchantId} = route.params;
+    const {name, image_product, description, price, merchantId, menuId} = route.params;
     useEffect(() => {
         const getMerchantProfile = async () => {
             try {
                 const merchantData = await getMerchant({merchantId: merchantId});
+                const ingredient = await getMenuIngredients({menuId: menuId, merchantId: merchantId});
+                setIngredient(ingredient);
                 setMerchant(merchantData);
             } catch (error) {
                 console.log(error);
@@ -78,6 +107,17 @@ export default function FoodScreen({route, navigation}: any) {
         };
 
         getMerchantProfile();
+        const fetchUserData = async () => {
+            try {
+                const userId = await getUserId();
+                const userData = await getUserData({userId: userId});
+                setUserData(userData);
+            } catch (error) {
+                console.log(error);
+            }
+        };
+
+        fetchUserData();
     }, []);
     const existingCartItem = cart.find((item) => item.name === name);
 
@@ -86,6 +126,11 @@ export default function FoodScreen({route, navigation}: any) {
             setCounter(existingCartItem.quantity);
         }
     }, [existingCartItem]);
+    const onRefresh = useCallback(async () => {
+        const userId = await getUserId();
+        const userData = await getUserData({userId: userId});
+        setUserData(userData);
+    }, []);
     return (
         <SafeAreaView style={{flex: 1, backgroundColor: "#fff"}}>
             <StatusBar barStyle="dark-content" backgroundColor={"white"} />
@@ -132,8 +177,10 @@ export default function FoodScreen({route, navigation}: any) {
 
             <Animated.Image source={{uri: image_product}} style={[Styles.headerImage, {transform: [{translateY}]}]} resizeMode="cover" />
             <Animated.ScrollView
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={() => onRefresh()} />}
                 contentContainerStyle={{paddingTop: IMAGE_HEIGHT}}
                 scrollEventThrottle={16}
+                showsVerticalScrollIndicator={false}
                 onScroll={Animated.event([{nativeEvent: {contentOffset: {y: scrollY}}}], {useNativeDriver: true})}
             >
                 <View style={Styles.contentBox}>
@@ -155,14 +202,62 @@ export default function FoodScreen({route, navigation}: any) {
                     {merchant && (
                         <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate("Shop", {merchantId})} style={Styles.merchantBox}>
                             <Image style={Styles.merchantImage} source={{uri: merchant.image}} />
-                            <Text>{merchant?.name}</Text>
+                            <Text style={{fontWeight: "bold", fontSize: 16}}>{merchant?.name}</Text>
                         </TouchableOpacity>
                     )}
-                    <View style={[Styles.dummyBlock, {alignItems: "center", justifyContent: "center"}]}>
-                        <Text>Bahan Bahan</Text>
-                    </View>
-                    <View style={[Styles.dummyBlock, {alignItems: "center", justifyContent: "center", height: 500}]}>
-                        <Text>Scroll Test</Text>
+                    <View style={Styles.divider} />
+                    <View style={{gap: 4, marginTop: 4}}>
+                        <Text>{ingredient ? "Ingredients" : <Skeleton height={20} width={"100%"} borderRadius={10} speed="normal" />}</Text>
+                        <View></View>
+                        <View>
+                            {ingredient ? (
+                                <>
+                                    {ingredient.some((item: any) => userData?.allergies?.includes(item.name)) && (
+                                        <View style={{padding: 10, backgroundColor: "rgba(218, 156, 59, .2)", borderRadius: 8}}>
+                                            <Text>
+                                                <View style={{flexDirection: "row", alignItems: "center", gap: 8}}>
+                                                    <Ionicons name="warning" size={20} color={Colors.danger} />
+                                                    <Text style={{color: Colors.danger, fontWeight: "bold"}}>
+                                                        This food contains your allergies: {userData?.allergies?.join(", ")}
+                                                    </Text>
+                                                </View>
+                                            </Text>
+                                        </View>
+                                    )}
+                                    {ingredient.map((item: any, index: number) => {
+                                        const isAllergic = userData?.allergies?.includes(item.name);
+                                        return (
+                                            <View key={index}>
+                                                <View
+                                                    style={{
+                                                        backgroundColor: isAllergic ? "rgba(218, 156, 59, .2)" : "transparent",
+                                                        padding: 8,
+                                                        borderRadius: 8,
+                                                        flexDirection: isAllergic ? "row" : "column",
+                                                        justifyContent: isAllergic ? "space-between" : "flex-start",
+                                                        alignItems: isAllergic ? "center" : "flex-start",
+                                                    }}
+                                                >
+                                                    <Text style={{color: isAllergic ? Colors.danger : "black"}}>
+                                                        {item.name} - {item.quantity}
+                                                    </Text>
+                                                    {isAllergic && (
+                                                        <Text style={{color: Colors.danger, fontWeight: "bold"}}>
+                                                            <Ionicons name="warning" size={20} color={Colors.danger} />
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                                <View style={{marginVertical: 4}}>
+                                                    <DashedLine />
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
+                                </>
+                            ) : (
+                                <Skeleton height={200} width={"100%"} borderRadius={10} speed="normal" />
+                            )}
+                        </View>
                     </View>
                 </View>
             </Animated.ScrollView>
@@ -197,27 +292,41 @@ export default function FoodScreen({route, navigation}: any) {
                             <Text>{BahtFormat(price)}</Text>
                             {existingCartItem && <Text style={{color: "#000", fontSize: 12}}>Already in Cart: {existingCartItem.quantity}</Text>}
                         </View>
-                        <View style={{flexDirection: "row", gap: 12, borderRadius: 5, backgroundColor: "rgba(0,0,0,0.1)", height: 30}}>
-                            <TouchableOpacity
-                                onPress={() => setCounter(counter - 1 < 1 ? 1 : counter - 1)}
-                                style={[Styles.counterBtn, {borderTopLeftRadius: 5, borderBottomLeftRadius: 5}]}
-                            >
-                                <View>
-                                    <Text>-</Text>
+                        {existingCartItem && (
+                            <View style={{flexDirection: "row", gap: 12, borderRadius: 5, backgroundColor: "rgba(0,0,0,0.1)", height: 30}}>
+                                {existingCartItem.quantity > 0 && existingCartItem.quantity < 2 && (
+                                    <TouchableOpacity
+                                        onPress={() => removeFromCart(name)}
+                                        style={[Styles.counterBtn, {borderTopLeftRadius: 5, borderBottomLeftRadius: 5}]}
+                                    >
+                                        <View>
+                                            <Ionicons name="trash" size={20} color={Colors.danger} />
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+                                {existingCartItem.quantity > 1 && (
+                                    <TouchableOpacity
+                                        onPress={() => setCounter(counter - 1 < 1 ? 1 : counter - 1)}
+                                        style={[Styles.counterBtn, {borderTopLeftRadius: 5, borderBottomLeftRadius: 5}]}
+                                    >
+                                        <View>
+                                            <Text>-</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+                                <View style={{flexDirection: "row", alignItems: "center", gap: 10}}>
+                                    <Text>{counter}</Text>
                                 </View>
-                            </TouchableOpacity>
-                            <View style={{flexDirection: "row", alignItems: "center", gap: 10}}>
-                                <Text>{counter}</Text>
+                                <TouchableOpacity
+                                    onPress={() => setCounter(counter + 1)}
+                                    style={[Styles.counterBtn, {borderTopRightRadius: 5, borderBottomRightRadius: 5}]}
+                                >
+                                    <View>
+                                        <Text>+</Text>
+                                    </View>
+                                </TouchableOpacity>
                             </View>
-                            <TouchableOpacity
-                                onPress={() => setCounter(counter + 1)}
-                                style={[Styles.counterBtn, {borderTopRightRadius: 5, borderBottomRightRadius: 5}]}
-                            >
-                                <View>
-                                    <Text>+</Text>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
+                        )}
                     </View>
                     <View>
                         <TouchableOpacity
@@ -242,6 +351,49 @@ export default function FoodScreen({route, navigation}: any) {
                     </View>
                 </View>
             </View>
+            <Modal visible={showAllergyWarning} transparent animationType="fade" onRequestClose={() => setShowAllergyWarning(false)}>
+                <View style={{flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center"}}>
+                    <View style={{backgroundColor: "white", padding: 20, borderRadius: 12, width: "80%"}}>
+                        <View style={{flexDirection: "row", marginBottom: 10, gap: 10}}>
+                            <Ionicons name="warning" size={20} color={Colors.danger} />
+                            <Text style={{color: Colors.danger, fontWeight: "bold", fontSize: 16}}>Warning</Text>
+                        </View>
+                        <View style={{marginBottom: 20}}>
+                            <Text>
+                                This food contains your {userData?.allergies?.length > 1 ? "allergies" : "allergy"}:{" "}
+                                <Text style={{color: Colors.danger, fontWeight: "bold"}}>{userData?.allergies?.join(", ")}.</Text>
+                            </Text>
+                            <Text>Are you sure you want to proceed?</Text>
+                        </View>
+                        <View style={{flexDirection: "row", justifyContent: "flex-end", gap: 12}}>
+                            <TouchableOpacity
+                                onPress={() => setShowAllergyWarning(false)}
+                                style={{padding: 10, backgroundColor: Colors.primary, borderRadius: 5, width: 50, alignItems: "center"}}
+                            >
+                                <Text style={{color: Colors.white, fontWeight: "bold"}}>No</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setShowAllergyWarning(false);
+                                    setCanProceed(true);
+                                    handleAddToCart();
+                                }}
+                                style={{
+                                    padding: 10,
+                                    backgroundColor: Colors.white,
+                                    borderRadius: 5,
+                                    borderWidth: 1,
+                                    borderColor: Colors.danger,
+                                    width: 50,
+                                    alignItems: "center",
+                                }}
+                            >
+                                <Text style={{color: Colors.danger, fontWeight: "bold"}}>Yes</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -300,7 +452,7 @@ const Styles = StyleSheet.create({
         borderTopRightRadius: 20,
         marginTop: -20,
         padding: 16,
-        paddingBottom: 100,
+        paddingBottom: 150,
     },
     title: {
         fontSize: 24,
@@ -317,7 +469,7 @@ const Styles = StyleSheet.create({
         marginTop: 5,
     },
     divider: {
-        width: "90%",
+        width: "100%",
         height: 0.5,
         backgroundColor: "#2d2d2d",
         marginTop: 10,
@@ -334,6 +486,7 @@ const Styles = StyleSheet.create({
         borderRadius: 40,
     },
     dummyBlock: {
+        width: "100%",
         height: 100,
         backgroundColor: "red",
         marginVertical: 10,

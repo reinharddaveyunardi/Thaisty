@@ -33,22 +33,6 @@ export default function ProfileScreen({navigation}: any) {
             navigation.getParent()?.setOptions({tabBarStyle: {backgroundColor: "#fff"}});
         };
     }, [navigation]);
-
-    const pickImage = async () => {
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.All,
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 1,
-        });
-
-        if (!result.canceled) {
-            const uri = result.assets[0].uri;
-            return uri;
-        } else {
-            return null;
-        }
-    };
     return (
         <SafeAreaView style={{flex: 1, backgroundColor: Colors.white}}>
             <StatusBar backgroundColor={"white"} barStyle={"dark-content"} />
@@ -56,14 +40,12 @@ export default function ProfileScreen({navigation}: any) {
                 <View
                     style={{
                         paddingHorizontal: 10,
-                        zIndex: 999,
+                        zIndex: 1000,
                         width: 54,
                         left: 10,
                         alignItems: "center",
                         top: insets.top + 20,
-                        paddingTop: 10,
                         padding: 10,
-                        paddingBottom: insets.bottom,
                         position: "absolute",
                     }}
                 >
@@ -96,7 +78,7 @@ export default function ProfileScreen({navigation}: any) {
                             height: -10,
                         },
                         elevation: 10,
-                        zIndex: 888,
+                        zIndex: 1,
                         shadowRadius: 6,
                         shadowOpacity: 0.25,
                     }}
@@ -121,7 +103,7 @@ export default function ProfileScreen({navigation}: any) {
                                 shadowOpacity: 0.25,
                             }}
                         >
-                            <TouchableOpacity onPress={pickImage}>
+                            <TouchableOpacity disabled>
                                 <Image source={require("@/assets/images/profile.png")} style={{width: 90, height: 90, borderRadius: 50}} />
                             </TouchableOpacity>
                         </View>

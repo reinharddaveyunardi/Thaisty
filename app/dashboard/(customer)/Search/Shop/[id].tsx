@@ -3,7 +3,6 @@ import {getMerchant, getMerchantMenu} from "@/services/api";
 import {BahtFormat} from "@/utils/FormatCurrency";
 import {MaterialIcons} from "@expo/vector-icons";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import {useLocalSearchParams} from "expo-router";
 import React from "react";
 import {useEffect, useState} from "react";
 import {
@@ -20,7 +19,6 @@ import {
     RefreshControl,
     Dimensions,
 } from "react-native";
-import SwipeToPay from "./components/ui/SwipeToPay";
 import {useCart} from "@/contexts/CartProvider";
 interface QuantitiesState {
     [key: string]: number;
@@ -41,7 +39,6 @@ export default function ShopScreen({route, navigation}: any) {
         setMerchant(merchantData);
         const merchantMenu = await getMerchantMenu({merchantId: merchantId});
         setMerchantMenu(merchantMenu);
-        console.log(merchantMenu);
         setRefreshing(false);
     }, []);
     useEffect(() => {
@@ -60,9 +57,7 @@ export default function ShopScreen({route, navigation}: any) {
                 console.log(error);
             }
         };
-
         getMerchantProfile();
-
         const getMenu = async () => {
             try {
                 const merchantMenu = await getMerchantMenu({merchantId: merchantId});
@@ -134,11 +129,6 @@ export default function ShopScreen({route, navigation}: any) {
                     </TouchableOpacity>
                 </View>
             </View>
-            {cart.length > 0 ? (
-                <View style={{position: "absolute", bottom: "-85%", left: 0, width: "100%", height: "100%", zIndex: 9999}}>
-                    <SwipeToPay onSuccess={() => console.log("Pembayaran berhasil")} />
-                </View>
-            ) : null}
             <ScrollView
                 style={{width: "100%", height: "100%", backgroundColor: "#fff"}}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -201,6 +191,7 @@ export default function ShopScreen({route, navigation}: any) {
                                     key={index}
                                     onPress={() =>
                                         navigation.navigate("FoodDetail", {
+                                            menuId: item.id,
                                             name: item.name,
                                             price: item.price,
                                             image_product: item.image,

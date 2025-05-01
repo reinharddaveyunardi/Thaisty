@@ -1,4 +1,4 @@
-import {StyleSheet, View, TextInput, ScrollView, TouchableOpacity, SafeAreaView, Image, Text, RefreshControl, StatusBar, Button} from "react-native";
+import {StyleSheet, View, ScrollView, TouchableOpacity, SafeAreaView, Image, Text, RefreshControl, StatusBar} from "react-native";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import RecommendedFoods from "@/components/ui/RecommendationSection";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
@@ -6,18 +6,20 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import {Colors} from "@/constant/Colors";
 import PromoBanner from "@/components/ui/PromoBanner";
 import {getUserId} from "@/services/SecureStore";
-import {auth} from "@/config/firebase";
-import {onAuthStateChanged} from "firebase/auth";
 import {getUserData} from "@/services/api";
 import {useCart} from "@/contexts/CartProvider";
 import {GestureHandlerRootView} from "react-native-gesture-handler";
-import BottomSheet, {BottomSheetModal, BottomSheetView, BottomSheetModalProvider, BottomSheetScrollView} from "@gorhom/bottom-sheet";
+import BottomSheet, {BottomSheetView, BottomSheetModalProvider, BottomSheetScrollView} from "@gorhom/bottom-sheet";
+import {BahtFormat} from "@/utils/FormatCurrency";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 export default function CustomerScreen({navigation}: any) {
     const [refreshing, setRefreshing] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const [userData, setUserData] = useState<any | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
     const {cart, getTotalPrice} = useCart();
+    const insets = useSafeAreaInsets();
     const onRefresh = React.useCallback(async () => {
         setRefreshing(true);
         const userId = await getUserId();
@@ -28,22 +30,23 @@ export default function CustomerScreen({navigation}: any) {
     const bottomSheetRef = useRef<BottomSheet>(null);
     const handlePresentModalPress = useCallback(() => {
         bottomSheetRef.current?.snapToIndex(4);
-
-        if (cart.length == 0) {
-            bottomSheetRef.current?.close();
-        }
     }, []);
+
+    useEffect(() => {
+        if (userData?.address == "" || (userData?.location._lat == 0 && userData?.location._long == 0)) {
+            navigation.navigate("SelectLocationScreen");
+        }
+    }, [userData]);
 
     const fetchUserData = async () => {
         try {
             const userId = await getUserId();
-
             if (!userId) {
                 console.log("User ID not found");
                 return;
             }
-
             const data = await getUserData({userId});
+            setUserId(userId);
             setUserData(data);
         } catch (error) {
             console.error("Failed to fetch user data:", error);
@@ -52,8 +55,16 @@ export default function CustomerScreen({navigation}: any) {
         }
     };
     useEffect(() => {
-        if (!isChecked) fetchUserData();
-        setIsChecked(true);
+        if (cart.length < 1) {
+            bottomSheetRef.current?.close();
+            bottomSheetRef.current?.collapse;
+        }
+    }, [cart]);
+    useEffect(() => {
+        const unsub = navigation.addListener("focus", () => {
+            fetchUserData();
+        });
+        return () => unsub;
     }, []);
 
     const groupedCart = cart?.reduce((acc: any, item: any) => {
@@ -66,7 +77,7 @@ export default function CustomerScreen({navigation}: any) {
     }, {});
 
     return (
-        <SafeAreaView style={{flex: 1, backgroundColor: "#fff", height: " 100%"}}>
+        <SafeAreaView style={{flex: 1, backgroundColor: "#fff", height: " 100%", paddingTop: insets.top}}>
             <StatusBar barStyle="dark-content" backgroundColor={"#fff"} />
             <GestureHandlerRootView style={styles.container}>
                 <ScrollView
@@ -91,7 +102,7 @@ export default function CustomerScreen({navigation}: any) {
                                     <View style={{flexDirection: "row", alignItems: "center", gap: 8}}>
                                         <FontAwesome6 name="location-dot" size={16} color={Colors.primary} />
                                         <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>
-                                            <Text>{userData?.address.length > 30 ? userData?.address.slice(0, 30) + "..." : null}</Text>
+                                            <Text>{userData?.address.length > 30 ? userData?.address.slice(0, 30) + "..." : userData?.address}</Text>
                                             <Ionicons name="chevron-down" size={16} color={Colors.primary} />
                                         </View>
                                     </View>
@@ -159,9 +170,39 @@ export default function CustomerScreen({navigation}: any) {
                             </View>
                         </TouchableOpacity>
                     </View>
+                    {/* Balance */}
                     <View style={{paddingHorizontal: 16}}>
                         <View style={{marginTop: 16}}>
-                            <PromoBanner />
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    marginBottom: 8,
+                                    backgroundColor: "#fff",
+                                    borderRadius: 8,
+                                    padding: 12,
+                                    elevation: 2,
+                                    shadowColor: "#000",
+                                    shadowOffset: {width: 1, height: 2},
+                                    shadowOpacity: 0.1,
+                                    shadowRadius: 3,
+                                }}
+                            >
+                                <View>
+                                    <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>
+                                        <Ionicons name="wallet-outline" size={16} color={Colors.primary} />
+                                        <Text style={{fontSize: 16}}>Balance</Text>
+                                    </View>
+                                    <Text>{BahtFormat(userData?.balance || 0.0)}</Text>
+                                </View>
+                                <View>
+                                    <TouchableOpacity style={{flexDirection: "row", alignItems: "center", gap: 4}} onPress={() => navigation.navigate("Topup")}>
+                                        <Ionicons name="add-circle-outline" size={24} color={Colors.primary} />
+                                        <Text style={{color: Colors.primary}}>Top Up</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         </View>
                         <View style={{marginTop: 16}}>
                             <View style={{flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8}}>
@@ -239,7 +280,7 @@ export default function CustomerScreen({navigation}: any) {
                                 <TouchableOpacity
                                     style={{width: "90%", backgroundColor: Colors.primary, padding: 12, borderRadius: 10, alignItems: "center"}}
                                     onPress={() => {
-                                        navigation.navigate("CheckoutScreen");
+                                        navigation.navigate("CheckoutScreen", {customerId: userId});
                                     }}
                                 >
                                     <Text style={{color: "white"}}>Checkout</Text>

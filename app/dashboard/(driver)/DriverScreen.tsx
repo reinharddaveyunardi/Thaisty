@@ -74,39 +74,38 @@ export default function DriverScreen({navigation}: any) {
     }, [userData?.currentOrderId]);
 
     useEffect(() => {
-        console.log("Nyala");
         const fetchEarnings = async () => {
             const userId = await getUserId();
             if (!userId) return;
-            console.log("fetching");
             const earnings = await fetchDailyEarnings({userId: userId});
-            console.log("udah fetch");
             setDailyEarnings(earnings);
-            console.log("Earnings:", earnings);
         };
 
         fetchEarnings();
     }, [userData]);
-    const handleLogout = () => {
-        console.log("Logging out...");
-        removeUserId();
-        logout();
-        router.replace("/auth/LoginScreen");
-    };
-
     return (
         <SafeAreaView style={{flex: 1, backgroundColor: "#fff", gap: 12}}>
             <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
             <ScrollView
-                style={{flex: 1}}
+                style={{flex: 1, zIndex: -1}}
                 stickyHeaderIndices={[0]}
                 contentContainerStyle={{gap: 12}}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
                 <View style={{zIndex: 0}}>
                     <View style={{height: 200, width: "100%", backgroundColor: Colors.primary}} />
+                    <View style={{position: "absolute", top: 20, right: 16, flexDirection: "row", gap: 12}}>
+                        <TouchableOpacity onPress={() => navigation.navigate("ScanScreen")}>
+                            <Ionicons name="scan" size={24} color={Colors.white} />
+                        </TouchableOpacity>
+                        <TouchableOpacity>
+                            <Ionicons name="notifications" size={24} color={Colors.white} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
-                <View
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={() => navigation.navigate("ProfileScreen")}
                     style={{
                         height: 150,
                         width: "90%",
@@ -114,7 +113,6 @@ export default function DriverScreen({navigation}: any) {
                         backgroundColor: Colors.white,
                         position: "absolute",
                         top: 130,
-
                         zIndex: 10,
                         alignSelf: "center",
                         shadowColor: "#000",
@@ -170,7 +168,7 @@ export default function DriverScreen({navigation}: any) {
                             </View>
                         </View>
                     </View>
-                </View>
+                </TouchableOpacity>
                 <View style={{top: "150%", zIndex: 55, position: "absolute", width: "100%"}}>
                     <View
                         style={{
@@ -225,11 +223,6 @@ export default function DriverScreen({navigation}: any) {
                             </TouchableOpacity>
                         )}
                     </View>
-                </View>
-                <View style={{top: "200%", zIndex: 55, position: "absolute", width: "100%"}}>
-                    <TouchableOpacity onPress={handleLogout}>
-                        <Text>Log Out</Text>
-                    </TouchableOpacity>
                 </View>
             </ScrollView>
         </SafeAreaView>

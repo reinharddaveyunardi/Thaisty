@@ -21,7 +21,6 @@ export default function SearchScreen({navigation}: any) {
         const loadRestaurants = async () => {
             try {
                 const restaurantDoc = await getRestaurant();
-                console.log(restaurantDoc);
                 setRestaurantData(restaurantDoc);
                 setFilteredRestaurant(restaurantDoc);
             } catch (error) {

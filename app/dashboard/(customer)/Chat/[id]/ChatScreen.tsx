@@ -11,17 +11,29 @@ import {
     Image,
     TouchableOpacity,
     StyleSheet,
+    Keyboard,
 } from "react-native";
-import React, {useEffect, useState} from "react";
-import {useLocalSearchParams, useRouter} from "expo-router";
-import {ChatData} from "@/data/ChatData";
+import React, {useEffect, useRef, useState} from "react";
+import {useRouter} from "expo-router";
 import {Ionicons} from "@expo/vector-icons";
+import {useHeaderHeight} from "@react-navigation/elements";
+import {Colors} from "@/constant/Colors";
+import {doc, updateDoc} from "firebase/firestore";
+import {firestore} from "@/config/firebase";
+import {listenToMessages, sendMessage} from "@/services/api";
+import {getUserId} from "@/services/SecureStore";
+import {formatTime} from "@/utils/formatTime";
 
 export default function ChatScreen({route, navigation}: any) {
-    const {chatId} = route.params;
+    const {chatId, currentUserId} = route.params;
     const router = useRouter();
-    const chat = ChatData.find((item) => item.id === chatId);
+    const [messages, setMessages] = useState<any[]>([]);
     const [prompt, setPrompt] = useState("");
+    const scrollRef = useRef<ScrollView>(null);
+    const headerHeight = useHeaderHeight();
+    const [inputWrapperHeight, setInputWrapperHeight] = useState(0);
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+
     useEffect(() => {
         navigation.getParent()?.setOptions({tabBarStyle: {display: "none"}});
 
@@ -29,54 +41,76 @@ export default function ChatScreen({route, navigation}: any) {
             navigation.getParent()?.setOptions({tabBarStyle: {backgroundColor: "#fff"}});
         };
     }, [navigation]);
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => {
+            setKeyboardVisible(true);
+        });
+        const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
+            setKeyboardVisible(false);
+        });
 
-    if (!chat) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <Text style={styles.errorText}>Chat tidak ditemukan.</Text>
-            </SafeAreaView>
-        );
-    }
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
+    useEffect(() => {
+        const messageListener = listenToMessages({chatId, callback: setMessages});
+
+        return () => messageListener();
+    }, [chatId]);
+
+    const handleSendMessage = async () => {
+        setMessages((prevMessages) => [...prevMessages, {text: prompt, senderId: currentUserId}]);
+        const userId = await getUserId();
+        await sendMessage({chatId, senderId: userId, text: prompt, type: "customer"});
+        await updateDoc(doc(firestore, "chats", chatId), {lastMessage: prompt});
+
+        setPrompt("");
+        scrollRef.current?.scrollToEnd({animated: true});
+    };
 
     return (
-        <SafeAreaView style={{flex: 1, backgroundColor: "#fff"}}>
-            <StatusBar barStyle="dark-content" backgroundColor={"#fff"} />
-            <View style={{borderBottomWidth: 0.2, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between"}}>
-                <View>
-                    <View style={{flexDirection: "row", alignItems: "center"}}>
-                        <TouchableOpacity onPress={() => router.back()} style={{flexDirection: "row", alignItems: "center", gap: 4}}>
-                            <Ionicons name="chevron-back" size={24} color="black" />
-                            <Text>Go Back</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={{flexDirection: "row", width: "100%", alignItems: "center", gap: 4, paddingHorizontal: 28, justifyContent: "space-between"}}>
-                        <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>
-                            <Text>{chat.name}</Text>
-                            <Text style={{fontWeight: "bold"}}>Chat</Text>
-                        </View>
-                    </View>
+        <KeyboardAvoidingView
+            style={{flex: 1, backgroundColor: "#fff"}}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={keyboardVisible ? headerHeight + inputWrapperHeight - 20 : 0}
+        >
+            <SafeAreaView style={styles.container}>
+                <StatusBar barStyle="dark-content" backgroundColor={"#fff"} />
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={24} color="black" />
+                        <Text>Go Back</Text>
+                    </TouchableOpacity>
+                    <Image source={{uri: "https://via.placeholder.com/150"}} style={styles.avatar} />
                 </View>
-                <View>
-                    <Image source={{uri: chat.avatar}} style={{width: 38, height: 38, borderRadius: 50}} />
-                </View>
-            </View>
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{flex: 1}}>
-                <ScrollView style={styles.chatContainer}>
-                    {chat.chats.map((msg, index) => (
-                        <View key={index} style={msg.sender === "customer" ? styles.userBubble : styles.aiBubble}>
-                            <Text>{msg.message}</Text>
+
+                <ScrollView ref={scrollRef} style={styles.chatContainer} onContentSizeChange={() => scrollRef.current?.scrollToEnd({animated: true})}>
+                    {messages.map((msg, index) => (
+                        <View key={msg.id || index} style={msg.type === "customer" ? styles.userBubble : styles.aiBubble}>
+                            <Text>{msg.text}</Text>
+                            <Text>{msg.sentAt ? formatTime(msg.sentAt) : ""}</Text>
                         </View>
                     ))}
                 </ScrollView>
-                <View style={styles.inputContainer}>
+
+                <View
+                    style={[styles.inputWrapper, {backgroundColor: "white", flex: 1}]}
+                    onLayout={(event) => {
+                        const {height} = event.nativeEvent.layout;
+                        setInputWrapperHeight(height);
+                    }}
+                >
                     <TextInput style={styles.input} placeholder="Ketik sesuatu..." value={prompt} onChangeText={setPrompt} />
-                    <Button title="Kirim" onPress={() => {}} />
+                    <TouchableOpacity onPress={handleSendMessage} style={styles.sendButton}>
+                        <Text style={{color: "#fff"}}>Send</Text>
+                    </TouchableOpacity>
                 </View>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+            </SafeAreaView>
+        </KeyboardAvoidingView>
     );
 }
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -88,9 +122,34 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "red",
     },
+    header: {
+        borderBottomWidth: 0.2,
+        padding: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    backButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+    },
+    headerTextContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingHorizontal: 28,
+        justifyContent: "space-between",
+    },
+    avatar: {
+        width: 38,
+        height: 38,
+        borderRadius: 50,
+    },
     chatContainer: {
         flex: 1,
-        padding: 20,
+        paddingHorizontal: 20,
+        paddingTop: 10,
     },
     userBubble: {
         alignSelf: "flex-end",
@@ -108,23 +167,32 @@ const styles = StyleSheet.create({
         marginVertical: 5,
         maxWidth: "80%",
     },
-    inputContainer: {
+    inputWrapper: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
         flexDirection: "row",
-        alignItems: "flex-end",
-        width: "100%",
+        alignItems: "center",
         padding: 10,
-        backgroundColor: "#fff",
         borderTopWidth: 1,
-        borderColor: "#ddd",
+        borderColor: "#fff",
+        backgroundColor: "#fff",
     },
     input: {
         flex: 1,
         borderWidth: 1,
         borderColor: "#ccc",
-        padding: 10,
-        height: 40,
-        width: "80%",
         borderRadius: 5,
+        padding: 10,
         marginRight: 10,
+    },
+    sendButton: {
+        backgroundColor: Colors.primary,
+        width: 50,
+        borderRadius: 5,
+        alignItems: "center",
+        height: "100%",
+        justifyContent: "center",
     },
 });

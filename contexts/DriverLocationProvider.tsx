@@ -32,14 +32,13 @@ export const DriverLocationProvider = ({children}: any) => {
                         {
                             location: location !== undefined ? new GeoPoint(latitude, longitude) : null,
                             updatedAt: new Date(),
+                            averageSpeed,
                         },
                         {merge: true}
                     );
                     const speedInKmh = (loc.coords.speed ?? 0) * 3.6;
-
                     setLocation({latitude, longitude});
                     setSpeed(speedInKmh);
-
                     if (speedInKmh > 1) {
                         setSpeedSample((prev) => {
                             const newSamples = [...prev.slice(-4), speedInKmh];

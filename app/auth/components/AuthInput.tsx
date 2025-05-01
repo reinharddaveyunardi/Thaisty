@@ -1,5 +1,4 @@
-import {View, Text, TextInput, TextInputProps, StyleSheet, Touchable, TouchableOpacity, Dimensions} from "react-native";
-import React from "react";
+import {View, Text, TextInput, TextInputProps, StyleSheet, TouchableOpacity, Dimensions} from "react-native";
 import {Ionicons} from "@expo/vector-icons";
 
 interface AuthInputProps extends TextInputProps {
@@ -16,7 +15,7 @@ export default function AuthInput({label, placeholder, forPassword, triggerSecur
         <View>
             {forPassword ? (
                 <View>
-                    {label && <Text>{label}</Text>}
+                    {label && <Text style={{color: rest.conditionBorder ? "red" : "#000000"}}>{label}</Text>}
                     <View>
                         <View
                             style={{
@@ -26,7 +25,7 @@ export default function AuthInput({label, placeholder, forPassword, triggerSecur
                                 borderWidth: 1,
                                 width: "100%",
                                 maxWidth: Dimensions.get("screen").width,
-                                borderColor: "#000000",
+                                borderColor: rest.conditionBorder ? "red" : "#000000",
                                 borderRadius: 8,
                                 height: 45,
                             }}
@@ -36,23 +35,34 @@ export default function AuthInput({label, placeholder, forPassword, triggerSecur
                                     {...rest}
                                     inputMode="text"
                                     placeholder={placeholder}
-                                    placeholderTextColor={"#000000"}
+                                    placeholderTextColor={rest.conditionBorder ? "red" : "#000000"}
                                     style={[Styles.inputPassword]}
                                 />
                             </View>
                             <View style={{paddingRight: 12}}>
                                 <TouchableOpacity onPress={triggerSecureTextEntry}>
-                                    <Ionicons name={passwordStatus ? "eye-off-outline" : "eye-outline"} size={24} color="black" />
+                                    <Ionicons
+                                        name={passwordStatus ? "eye-off-outline" : "eye-outline"}
+                                        size={24}
+                                        color={rest.conditionBorder ? "red" : "#000000"}
+                                    />
                                 </TouchableOpacity>
                             </View>
                         </View>
+                        {rest.conditionBorder && <Text style={{color: "red"}}>{label} is required</Text>}
                     </View>
                 </View>
             ) : (
-                <View>
-                    {label && <Text>{label}</Text>}
+                <View style={{gap: 4}}>
+                    {label && <Text style={{color: rest.conditionBorder ? "red" : "#000000"}}>{label}</Text>}
                     <View>
-                        <TextInput {...rest} placeholder={placeholder} placeholderTextColor={"#000000"} style={Styles.input} />
+                        <TextInput
+                            {...rest}
+                            placeholder={placeholder}
+                            placeholderTextColor={rest.conditionBorder ? "red" : "#000000"}
+                            style={[Styles.input, {borderColor: rest.conditionBorder ? "red" : "#000000"}]}
+                        />
+                        {rest.conditionBorder && <Text style={{color: "red"}}>{label} is required</Text>}
                     </View>
                 </View>
             )}
@@ -63,14 +73,13 @@ export default function AuthInput({label, placeholder, forPassword, triggerSecur
 const Styles = StyleSheet.create({
     input: {
         borderWidth: 1,
-        borderColor: "#000000",
         borderRadius: 8,
         width: "100%",
         padding: 12,
-        marginBottom: 12,
     },
     inputPassword: {
         borderRadius: 8,
+
         width: "90%",
         padding: 12,
     },

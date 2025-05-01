@@ -17,6 +17,11 @@
             }
         },
         "android": {
+            "config": {
+                "googleMaps": {
+                    "apiKey": "AIzaSyBoHxlKMQIhIeWkUTz7VsqwPgrnBe-F9M0"
+                }
+            },
             "permissions": ["NOTIFICATIONS"],
             "adaptiveIcon": {
                 "foregroundImage": "./assets/images/adaptive-icon.png",

@@ -1,6 +1,6 @@
 const {GoogleGenerativeAI, HarmCategory, HarmBlockThreshold} = require("@google/generative-ai");
 
-const apiKey = process.env.GEMINI_API_KEY || "AIzaSyC3Ag076WFNcVsz8eYEhr-Fv9Fo5zxRoVM";
+const apiKey = process.env.GEMINI_API_KEY || "AIzaSyB0r3sGZDtmmu03FJtvXkA_IxMV20si-D8";
 const genAI = new GoogleGenerativeAI(apiKey);
 
 const model = genAI.getGenerativeModel({
@@ -25,7 +25,7 @@ export async function GeminiAi({prompt}: {prompt: string}) {
         return text
             .replace(/\*\*(.*?)\*\*/g, "$1")
             .replace(/\*(.*?)\*/g, "$1")
-            .replace(/- /g, "• ")
+            .replace(/- /g, "* ")
             .replace(/\n\s*•/g, "\n•");
     };
     const result = await chatSession.sendMessage(prompt);

@@ -1,4 +1,5 @@
 export const AllergiesData = [
+    {name: "Chicken"},
     {name: "Milk"},
     {name: "Eggs"},
     {name: "Peanuts"},

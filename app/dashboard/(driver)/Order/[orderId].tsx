@@ -6,22 +6,14 @@ import MapViewDirections from "react-native-maps-directions";
 import MapView, {Marker} from "react-native-maps";
 import {Colors} from "@/constant/Colors";
 import BottomSheet, {BottomSheetScrollView} from "@gorhom/bottom-sheet";
-import {doc, getDoc, onSnapshot, setDoc, updateDoc} from "firebase/firestore";
+import {doc, getDoc, updateDoc} from "firebase/firestore";
 import {getUserId} from "@/services/SecureStore";
 import {auth, firestore} from "@/config/firebase";
-import {CalculateDeliveryPrice} from "@/utils/CalculateDeliveryPrice";
 import {useDriverLocation} from "@/contexts/DriverLocationProvider";
-import {calculateDelta} from "@/utils/CalculateDelta";
 
 export default function OrderId({route, navigation}: any) {
     const {orderId} = route.params;
     const [orderData, setOrderData] = useState<any | null>(null);
-    const {latDelta, longDelta} = calculateDelta(
-        orderData?.merchantLocation.latitude,
-        orderData?.merchantLocation.longitude,
-        orderData?.customerLocation.latitude,
-        orderData?.customerLocation.longitude
-    );
     const [driverData, setDriverData] = useState<any | null>(null);
     const [destination, setDestination] = useState<"Restaurant" | "Customer">("Customer");
     const [merchantName, setMerchantName] = useState<any | null>(null);
@@ -175,6 +167,12 @@ export default function OrderId({route, navigation}: any) {
                             <Marker coordinate={location} title="Driver">
                                 <Image source={require("@/assets/images/motorbike.png")} style={{width: 40, height: 40}} />
                             </Marker>
+                            <Marker coordinate={{latitude: orderData?.customerLocation._lat, longitude: orderData?.customerLocation._long}} title="Customer">
+                                <Image source={require("@/assets/images/me.png")} style={{width: 40, height: 40}} />
+                            </Marker>
+                            <Marker coordinate={{latitude: orderData?.merchantLocation._lat, longitude: orderData?.merchantLocation._long}} title="Merchant">
+                                <Ionicons name="restaurant" size={20} color="red" />
+                            </Marker>
                         </MapView>
                     ) : (
                         <View>
@@ -183,7 +181,7 @@ export default function OrderId({route, navigation}: any) {
                     )}
                 </View>
             </ScrollView>
-            <BottomSheet snapPoints={[Dimensions.get("window").height - 500]} index={1} topInset={0} enablePanDownToClose={false} enableOverDrag={false}>
+            <BottomSheet snapPoints={[Dimensions.get("window").height / 3, Dimensions.get("window").height / 2]} enablePanDownToClose={false}>
                 <BottomSheetScrollView contentContainerStyle={{padding: 16, gap: 8, justifyContent: "space-between", height: "100%"}}>
                     <View>
                         <View style={{flexDirection: "row", alignItems: "center", gap: 4}}>

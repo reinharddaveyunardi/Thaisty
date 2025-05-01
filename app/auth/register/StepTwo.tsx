@@ -1,141 +1,115 @@
-import {View, Text, TextInput, TouchableOpacity, StyleSheet} from "react-native";
-import SelectDropdown from "react-native-select-dropdown";
-import React, {useState} from "react";
+import {View, Text, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView} from "react-native";
+import {useState} from "react";
 import {Colors} from "@/constant/Colors";
-import {AllergiesData} from "@/data/Allergies";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import AuthInput from "../components/AuthInput";
+import {ValidatePassword} from "@/utils/ValidatePassword";
 
-type StepTwo = {
+interface StepOneProps {
+    fullName: string;
+    setFullName: (fullName: string) => void;
+    email: string;
+    setEmail: (email: string) => void;
+    password: string;
+    setPassword: (password: string) => void;
     nextStep: () => void;
-    prevStep: () => void;
-    onFinish: () => void;
-    selectedAllergies: string[];
-    setSelectedAllergies: (allergies: string[]) => void;
-};
+}
 
-export default function StepTwo({nextStep, prevStep, selectedAllergies, setSelectedAllergies, onFinish}: StepTwo) {
-    const toggleAllergy = (item: string) => {
-        if (selectedAllergies.includes(item)) {
-            setSelectedAllergies(selectedAllergies.filter((allergy) => allergy !== item));
-        } else {
-            setSelectedAllergies([...selectedAllergies, item]);
+export default function StepTwo({nextStep, fullName, email, password, setFullName, setEmail, setPassword}: StepOneProps) {
+    const [popup, setPopup] = useState(false);
+    const [popupText, setPopupText] = useState("");
+    const passwordRules = ValidatePassword(password);
+
+    const handleNextStep = () => {
+        if (!fullName.trim() || !email.trim() || !password.trim()) {
+            setPopupText("Please fill in all the required fields.");
+            setPopup(true);
+            return;
         }
+        nextStep();
     };
 
     return (
-        <View style={{gap: 12}}>
-            <View style={{gap: 4}}>
-                <Text>Select your allergies</Text>
-                <Text style={{color: Colors.primary}}>
-                    *This helps us filter out foods that may not be suitable for you. Or you can update your allergies anytime in your settings.
-                </Text>
-                <SelectDropdown
-                    search={true}
-                    renderSearchInputLeftIcon={() => <Ionicons name="search" size={20} />}
-                    searchPlaceHolder="Search your allergies"
-                    data={AllergiesData}
-                    onSelect={(selectedItem) => {
-                        toggleAllergy(selectedItem.name);
-                    }}
-                    renderButton={(isOpened) => {
-                        return (
-                            <View style={styles.dropdownButtonStyle} key={isOpened}>
-                                {AllergiesData.length == 0 && <Text>No allergies selected</Text>}
-                                <Text style={styles.dropdownButtonTxtStyle}>
-                                    {selectedAllergies
-                                        ? selectedAllergies.length > 2
-                                            ? `${selectedAllergies.slice(0, 2).join(", ")}...`
-                                            : selectedAllergies.join(", ")
-                                        : "Select your allergies"}
-                                </Text>
-                                <Ionicons name={isOpened ? "chevron-up" : "chevron-down"} style={styles.dropdownButtonArrowStyle} size={20} />
-                            </View>
-                        );
-                    }}
-                    renderItem={(item) => {
-                        return (
-                            <View style={{...styles.dropdownItemStyle}}>
-                                <View style={{flexDirection: "row", alignItems: "center"}}>
-                                    <Text style={styles.dropdownItemTxtStyle}>{item.name}</Text>
-                                    {selectedAllergies.includes(item.name) ? <Ionicons name="checkmark" size={20} color={"green"} /> : null}
-                                </View>
-                            </View>
-                        );
-                    }}
-                    disableAutoScroll
-                    showsVerticalScrollIndicator={false}
-                    dropdownStyle={styles.dropdownMenuStyle}
-                />
-            </View>
+        <KeyboardAvoidingView>
             <View>
-                <Text></Text>
-            </View>
-            {selectedAllergies.map((item) => (
-                <Text>{item}</Text>
-            ))}
-            <View style={{gap: 12}}>
-                <TouchableOpacity
-                    style={{backgroundColor: Colors.primary, padding: 10, height: 50, alignItems: "center", justifyContent: "center", borderRadius: 10}}
-                    onPress={onFinish}
-                >
-                    <Text style={{color: "white"}}>Register</Text>
+                <View>
+                    <AuthInput
+                        label="Full Name"
+                        placeholder="Enter your full name"
+                        forPassword={false}
+                        value={fullName}
+                        onChangeText={(text) => setFullName(text)}
+                    />
+                    <AuthInput label="Email" placeholder="Enter your Email" forPassword={false} value={email} onChangeText={(text) => setEmail(text)} />
+                    <View style={{marginBottom: 16}}>
+                        <AuthInput label="Create your Password" placeholder="Enter your new password" forPassword value={password} onChangeText={setPassword} />
+                        <View>
+                            <Text>Password must:</Text>
+                            <Text style={{color: passwordRules.length ? "green" : "red"}}>• Have at least 8 characters</Text>
+                            <Text style={{color: passwordRules.uppercase ? "green" : "red"}}>• Include at least one uppercase letter</Text>
+                            <Text style={{color: passwordRules.lowercase ? "green" : "red"}}>• Include at least one lowercase letter</Text>
+                            <Text style={{color: passwordRules.number ? "green" : "red"}}>• Include at least one number</Text>
+                            <Text style={{color: passwordRules.specialChar ? "green" : "red"}}>• Include at least one special character</Text>
+                        </View>
+                    </View>
+                </View>
+                {/* Popup */}
+                <Modal visible={popup} animationType="fade" transparent={true}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <View>
+                                <View style={styles.modalHeader}>
+                                    <Text style={styles.modalTitle}>Opss..</Text>
+                                </View>
+                                <Text>{popupText}</Text>
+                            </View>
+                            <TouchableOpacity style={styles.okButton} onPress={() => setPopup(false)}>
+                                <Text style={{color: "#fff"}}>Ok</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+                <TouchableOpacity onPress={handleNextStep} style={styles.nextButton}>
+                    <Text style={{color: "#fff", textAlign: "center"}}>Next</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={prevStep}
-                    style={{backgroundColor: "lightgray", padding: 10, height: 50, alignItems: "center", justifyContent: "center", borderRadius: 10}}
-                >
-                    <Text>Back</Text>
-                </TouchableOpacity>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
-    dropdownButtonStyle: {
-        width: "100%",
+    modalOverlay: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    modalContent: {
+        width: "80%",
+        backgroundColor: "white",
+        borderRadius: 10,
+        padding: 20,
+        gap: 16,
+    },
+    modalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: "bold",
+    },
+    okButton: {
+        backgroundColor: Colors.primary,
+        padding: 10,
+        borderRadius: 5,
+    },
+    nextButton: {
+        backgroundColor: Colors.primary,
+        padding: 10,
         height: 50,
-        borderWidth: 1,
-        borderRadius: 12,
-        flexDirection: "row",
-        justifyContent: "center",
         alignItems: "center",
-        paddingHorizontal: 12,
-    },
-    dropdownButtonTxtStyle: {
-        flex: 1,
-        fontSize: 18,
-        fontWeight: "500",
-        color: "#151E26",
-    },
-    dropdownButtonArrowStyle: {
-        fontSize: 28,
-    },
-    dropdownButtonIconStyle: {
-        fontSize: 28,
-        marginRight: 8,
-    },
-    dropdownMenuStyle: {
-        backgroundColor: "#E9ECEF",
-        borderRadius: 8,
-    },
-    dropdownItemStyle: {
-        width: "100%",
-        backgroundColor: "rgba(255, 255, 255, 0.5)",
-        flexDirection: "row",
-        paddingHorizontal: 12,
         justifyContent: "center",
-        alignItems: "center",
-        paddingVertical: 8,
-    },
-    dropdownItemTxtStyle: {
-        flex: 1,
-        fontSize: 18,
-        fontWeight: "500",
-        color: "#151E26",
-    },
-    dropdownItemIconStyle: {
-        fontSize: 28,
-        marginRight: 8,
+        borderRadius: 10,
     },
 });

@@ -16,19 +16,16 @@ export default function LoginScreen() {
     const [hidePassword, setHidePassword] = useState(true);
     const [popup, setPopup] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [userId, setUserId] = useState<String | null>(null);
 
     useEffect(() => {
         setLoading(true);
         const checkAuth = async () => {
             const userId = await getUserId();
+            setUserId(userId);
             const userData = await getUserData({userId});
             const userRole = userData?.role;
-            if (!userId) {
-                router.push("/auth/LoginScreen");
-            } else if (!userRole) {
-                const userId = await getUserId();
-                const userData = await getUserData({userId});
-                const userRole = userData?.role;
+            if (userRole) {
                 if (userRole === "customer") {
                     router.replace("/dashboard/CustomerScreen");
                 } else if (userRole === "merchant") {
@@ -42,7 +39,7 @@ export default function LoginScreen() {
             setLoading(false);
         };
         checkAuth();
-    }, []);
+    }, [userId]);
 
     const handleLogin = async () => {
         setLoading(true);

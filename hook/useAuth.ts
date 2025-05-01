@@ -16,11 +16,8 @@ export const login = async ({email, password}: loginProps) => {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const userId = user.uid;
-        console.log("[DEBUG LOGIN] Login successful. User ID:", userId);
         await saveUserId(userId);
         const storedUserId = await getUserId();
-        console.log("[DEBUG LOGIN] Retrieved User ID from SecureStore:", storedUserId);
-
         if (!storedUserId) {
             console.warn("[WARNING LOGIN] Failed to store user ID!");
         }
@@ -43,7 +40,6 @@ export const login = async ({email, password}: loginProps) => {
                 errorMessage = ValidationMessages.invalidPassword;
                 break;
         }
-        console.error("[ERROR] Login failed:", errorMessage);
         throw new Error(errorMessage);
     }
 };

@@ -1,13 +1,9 @@
-import React, {useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import {View, FlatList, ActivityIndicator, Text, SafeAreaView, TouchableOpacity} from "react-native";
-import {collection, onSnapshot, query, where, updateDoc, doc, getDoc, setDoc} from "firebase/firestore";
+import {collection, onSnapshot, query, where} from "firebase/firestore";
 import {firestore} from "@/config/firebase";
 import OrderCard from "../components/OrderCard";
-import {getDistance} from "geolib";
 import * as Location from "expo-location";
-import {useAuth} from "@/contexts/AuthProvider";
-import {getUserId} from "@/services/SecureStore";
-import {getUserData} from "@/services/api";
 import {Ionicons} from "@expo/vector-icons";
 export default function SearchOrdersScreen({navigation}: any) {
     const [orders, setOrders] = useState<any[]>([]);
@@ -20,34 +16,23 @@ export default function SearchOrdersScreen({navigation}: any) {
                 alert("Izin lokasi ditolak");
                 return;
             }
-            console.log("Updating driver location");
             const location = await Location.getCurrentPositionAsync({timeInterval: 1000, accuracy: 2});
             setDriverLocation({
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
             });
-            console.log("Updated driver location", location.coords.latitude, location.coords.longitude);
         })();
     }, []);
     useEffect(() => {
-        if (driverLocation) {
-            console.log("Driver location updated (by useEffect):", driverLocation.latitude, driverLocation.longitude);
-        }
-    }, [driverLocation]);
-
-    useEffect(() => {
         if (!driverLocation) return;
-
         const q = query(collection(firestore, "orders"), where("status", "==", "looking_for_driver"));
         const unsub = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
             setOrders(data);
             setLoading(false);
         });
-
         return () => unsub();
     }, [driverLocation]);
-
     const seeDetail = (id: string) => navigation.navigate("OrderDetail", {orderId: id});
     if (loading || !driverLocation) return <ActivityIndicator style={{flex: 1}} size="large" />;
 

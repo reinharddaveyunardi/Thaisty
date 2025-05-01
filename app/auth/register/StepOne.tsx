@@ -1,113 +1,224 @@
-import {View, Text, TextInput, TouchableOpacity, StyleSheet, Modal} from "react-native";
-import React, {useState} from "react";
+import {useEffect, useRef, useState} from "react";
+import {View, Text, TouchableOpacity, StyleSheet, Animated, SafeAreaView, Easing, Dimensions} from "react-native";
 import {Colors} from "@/constant/Colors";
-import AuthInput from "../components/AuthInput";
-import {ValidatePassword} from "@/utils/ValidatePassword";
+import {Ionicons} from "@expo/vector-icons";
+import {useRouter} from "expo-router";
+import {RegisterCustomers} from "@/services/api";
+import StepTwo from "./StepTwo";
+import StepThree from "./StepThree";
 
-interface StepOneProps {
-    fullName: string;
-    setFullName: (fullName: string) => void;
-    email: string;
-    setEmail: (email: string) => void;
-    password: string;
-    setPassword: (password: string) => void;
-    nextStep: () => void;
-}
+export default function StepOne() {
+    const [fullName, setFullName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [typeSelected, setTypeSelected] = useState<"Customer" | "Driver" | "Merchant">("Customer");
+    const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+    const [step, setStep] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
-export default function StepOne({nextStep, fullName, email, password, setFullName, setEmail, setPassword}: StepOneProps) {
-    const [popup, setPopup] = useState(false);
-    const [popupText, setPopupText] = useState("");
-    const passwordRules = ValidatePassword(password);
+    const nextStep = () => {
+        if (step < 3) setStep(step + 1);
+    };
 
-    const handleNextStep = () => {
-        if (!fullName.trim() || !email.trim() || !password.trim()) {
-            setPopupText("Please fill in all the required fields.");
-            setPopup(true);
-            return;
+    const prevStep = () => {
+        if (step > 1) setStep(step - 1);
+    };
+    const handleRegister = async () => {
+        setLoading(true);
+        try {
+            await RegisterCustomers({email, password, fullName, allergies: selectedAllergies});
+            router.push("/auth/LoginScreen");
+        } catch (error) {
+            console.error("Registration Error:", error);
         }
-        nextStep();
+        setLoading(false);
     };
 
     return (
-        <View>
-            <View>
-                <AuthInput
-                    label="Full Name"
-                    placeholder="Enter your full name"
-                    forPassword={false}
-                    value={fullName}
-                    onChangeText={(text) => setFullName(text)}
-                />
-                <AuthInput label="Email" placeholder="Enter your Email" forPassword={false} value={email} onChangeText={(text) => setEmail(text)} />
-                <View style={{marginBottom: 16}}>
-                    <AuthInput label="Create your Password" placeholder="Enter your new password" forPassword value={password} onChangeText={setPassword} />
+        <SafeAreaView style={{flex: 1, backgroundColor: "#fff"}}>
+            <View style={{paddingHorizontal: 32, paddingVertical: 48, gap: 12}}>
+                <View style={{alignItems: "center", flexDirection: "row", justifyContent: "space-between"}}>
                     <View>
-                        <Text>Password must:</Text>
-                        <Text style={{color: passwordRules.length ? "green" : "red"}}>• Have at least 8 characters</Text>
-                        <Text style={{color: passwordRules.uppercase ? "green" : "red"}}>• Include at least one uppercase letter</Text>
-                        <Text style={{color: passwordRules.lowercase ? "green" : "red"}}>• Include at least one lowercase letter</Text>
-                        <Text style={{color: passwordRules.number ? "green" : "red"}}>• Include at least one number</Text>
-                        <Text style={{color: passwordRules.specialChar ? "green" : "red"}}>• Include at least one special character</Text>
+                        <Text style={{fontSize: 48, fontWeight: "bold", color: Colors.primary, textAlign: "center"}}>Sign Up</Text>
+                        <Text>Please fill out the form below</Text>
                     </View>
-                </View>
-            </View>
-            {/* Popup */}
-            <Modal visible={popup} animationType="fade" transparent={true}>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View>
-                            <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>Opss..</Text>
-                            </View>
-                            <Text>{popupText}</Text>
-                        </View>
-                        <TouchableOpacity style={styles.okButton} onPress={() => setPopup(false)}>
-                            <Text style={{color: "#fff"}}>Ok</Text>
+                    <View>
+                        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.9}>
+                            <Ionicons name="close-outline" size={48} />
                         </TouchableOpacity>
                     </View>
                 </View>
-            </Modal>
-            <TouchableOpacity onPress={handleNextStep} style={styles.nextButton}>
-                <Text style={{color: "#fff", textAlign: "center"}}>Next</Text>
-            </TouchableOpacity>
-        </View>
+                <View style={{alignItems: "center", backgroundColor: "lightgray", padding: 4, borderRadius: 10}}>
+                    <View style={{flexDirection: "row", gap: 12, justifyContent: "space-between", width: "100%"}}>
+                        <TouchableOpacity
+                            onPress={() => setTypeSelected("Customer")}
+                            style={{
+                                backgroundColor: typeSelected === "Customer" ? Colors.primary : "lightgray",
+                                height: 40,
+                                width: 90,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                borderRadius: 6,
+                            }}
+                        >
+                            <Text style={{color: typeSelected === "Customer" ? "white" : "black"}}>Customer </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            disabled
+                            onPress={() => setTypeSelected("Merchant")}
+                            style={{
+                                backgroundColor: typeSelected === "Merchant" ? Colors.primary : "lightgray",
+                                height: 40,
+                                width: 90,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                borderRadius: 10,
+                            }}
+                        >
+                            <Text style={{color: typeSelected === "Merchant" ? "white" : "black"}}>Merchant(In development)</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            disabled
+                            onPress={() => setTypeSelected("Driver")}
+                            style={{
+                                backgroundColor: "lightgray",
+                                height: 40,
+                                width: 90,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                borderRadius: 10,
+                            }}
+                        >
+                            <Text style={{color: typeSelected === "Driver" ? "white" : "black"}}>Driver</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <View style={{width: "100%", height: 0.5, backgroundColor: "gray"}} />
+                <View style={{top: 20}}>
+                    <ProgressIndicator step={step} />
+                </View>
+                <View>
+                    {step === 1 && (
+                        <StepTwo
+                            nextStep={nextStep}
+                            email={email}
+                            password={password}
+                            fullName={fullName}
+                            setFullName={setFullName}
+                            setEmail={setEmail}
+                            setPassword={setPassword}
+                        />
+                    )}
+                    {step === 2 && (
+                        <StepThree
+                            nextStep={nextStep}
+                            prevStep={prevStep}
+                            selectedAllergies={selectedAllergies}
+                            setSelectedAllergies={setSelectedAllergies}
+                            onFinish={handleRegister}
+                        />
+                    )}
+                </View>
+            </View>
+        </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
-    modalOverlay: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-    },
-    modalContent: {
-        width: "80%",
-        backgroundColor: "white",
-        borderRadius: 10,
-        padding: 20,
-        gap: 16,
-    },
-    modalHeader: {
+const ProgressIndicator = ({step}: any) => {
+    const progressAnim = useRef(new Animated.Value(0)).current;
+    const icon: {name: "person" | "fast-food" | "checkmark-circle"}[] = [{name: "person"}, {name: "fast-food"}, {name: "checkmark-circle"}];
+    const translateYValues = useRef(icon.map(() => new Animated.Value(0))).current;
+    const opacityValues = useRef(icon.map(() => new Animated.Value(1))).current;
+
+    useEffect(() => {
+        Animated.timing(progressAnim, {
+            toValue: ((step - 1) * Dimensions.get("window").width) / 5 - 25,
+            duration: 300,
+            useNativeDriver: false,
+        }).start();
+        icon.forEach((_, index) => {
+            Animated.timing(translateYValues[index], {
+                toValue: step > index ? -20 : 7,
+                duration: 300,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+            }).start();
+            Animated.timing(opacityValues[index], {
+                toValue: step > index ? 1 : 0,
+                duration: 300,
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+            }).start();
+        });
+    }, [step]);
+
+    return (
+        <View style={stylesProgress.container}>
+            <View style={stylesProgress.line} />
+            <Animated.View style={[stylesProgress.progressLine, {width: progressAnim}]} />
+            {icon.map((name, index) => (
+                <View style={{alignItems: "center"}} key={index}>
+                    <Animated.View
+                        style={[
+                            {
+                                marginHorizontal: "5.5%",
+                                width: 32,
+                                height: 32,
+                                justifyContent: "center",
+                                alignItems: "center",
+                                backgroundColor: step > index ? "rgba(68, 100, 156, .2)" : "gray",
+                                borderRadius: 10,
+                                transform: [{translateY: translateYValues[index]}],
+                            },
+                        ]}
+                    >
+                        <Ionicons name={name.name} size={24} color={step > index ? Colors.primary : "#fff"} />
+                    </Animated.View>
+                    <Animated.View
+                        key={index}
+                        style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: 18,
+                            backgroundColor: Colors.primary,
+                            opacity: opacityValues[index],
+                            bottom: 13,
+                        }}
+                    />
+                </View>
+            ))}
+        </View>
+    );
+};
+const stylesProgress = StyleSheet.create({
+    container: {
         flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    modalTitle: {
-        fontSize: 16,
-        fontWeight: "bold",
-    },
-    okButton: {
-        backgroundColor: Colors.primary,
-        padding: 10,
-        borderRadius: 5,
-    },
-    nextButton: {
-        backgroundColor: Colors.primary,
-        padding: 10,
-        height: 50,
         alignItems: "center",
         justifyContent: "center",
+        marginVertical: 20,
+        position: "relative",
+    },
+    line: {
+        position: "absolute",
+        width: "35%",
+        left: "31%",
+        height: 4,
+        backgroundColor: "#ccc",
+        top: 25,
+    },
+    progressLine: {
+        position: "absolute",
+        height: 4,
+        top: 25,
+        width: "100%",
+        left: "31%",
+        backgroundColor: Colors.primary,
+    },
+    dot: {
+        width: 32,
+        height: 32,
         borderRadius: 10,
+        marginHorizontal: Dimensions.get("window").width / 5 - 10,
     },
 });

@@ -1,6 +1,23 @@
 import {auth, firestore} from "@/config/firebase";
 import {createUserWithEmailAndPassword, updateProfile} from "firebase/auth";
-import {collection, doc, GeoPoint, getDoc, getDocs, onSnapshot, query, setDoc, updateDoc, where} from "firebase/firestore";
+import {
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    GeoPoint,
+    getDoc,
+    getDocs,
+    increment,
+    limit,
+    onSnapshot,
+    orderBy,
+    query,
+    serverTimestamp,
+    setDoc,
+    updateDoc,
+    where,
+} from "firebase/firestore";
 import {format} from "date-fns";
 export const getUserData = async ({userId}: {userId: any}) => {
     try {
@@ -111,11 +128,8 @@ export const getMerchantMenu = async ({merchantId}: {merchantId: any}) => {
 };
 
 export const saveUserLocation = async ({userId, latitude, longitude, address}: {userId: any; latitude: any; longitude: any; address: any}) => {
-    console.log("Try to Saving location");
     try {
-        console.log("Saving location to", userId);
         const locationRef = doc(firestore, "users", userId);
-        console.log("SetDoc");
         await setDoc(
             locationRef,
             {
@@ -124,7 +138,6 @@ export const saveUserLocation = async ({userId, latitude, longitude, address}: {
             },
             {merge: true}
         );
-        console.log("Location saved successfully");
     } catch (e) {
         console.log(e);
     }
@@ -157,7 +170,6 @@ export const updateDailyEarnings = async ({userId, amount, orderId}: {userId: st
     const today = new Date();
     const dateString = today.toISOString().split("T")[0];
     const dailyEarningsRef = doc(firestore, "users", userId, "earnings", dateString);
-    console.log("Fetching earnings from path:", `users/${userId}/earnings/${dateString}`);
 
     const snapShot = await getDoc(dailyEarningsRef);
     if (snapShot.exists()) {
@@ -169,7 +181,6 @@ export const updateDailyEarnings = async ({userId, amount, orderId}: {userId: st
             orderId: orderId,
         });
     } else {
-        // Jika tidak ada data, buat entri baru dengan amount
         await setDoc(dailyEarningsRef, {amount: amount, date: dateString, orderId: orderId});
     }
 };
@@ -189,7 +200,6 @@ export const getAvailableOrder = (callback: (orders: any[]) => void) => {
 };
 
 export const fetchDailyEarnings = async ({userId}: {userId: string}) => {
-    console.log("Fetching earnings for user:", userId);
     try {
         const today = format(new Date(), "yyyy-MM-dd");
         const earningsRef = doc(firestore, "users", userId, "earnings", today);
@@ -198,11 +208,9 @@ export const fetchDailyEarnings = async ({userId}: {userId: string}) => {
 
         if (snapShot.exists()) {
             const earningsData = snapShot.data();
-            console.log("Earnings Data:", earningsData);
-            return earningsData?.amount || 0; // assuming 'amount' field exists in the document
+            return earningsData?.amount || 0;
         } else {
-            console.log("No earnings data for today");
-            return 0; // No data found
+            return 0;
         }
     } catch (error) {
         console.error("Error fetching daily earnings:", error);
@@ -215,4 +223,127 @@ export const getNearbyDrivers = async () => {
     const snapshot = await getDocs(q);
     const drivers = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
     return drivers;
+};
+
+export const getSavedAddress = async ({userId}: {userId: any}) => {
+    try {
+        const querySnapshot = await getDocs(collection(firestore, "users", userId, "savedAddress"));
+        const savedAddresses = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        return savedAddresses;
+    } catch (error) {
+        console.log("Error fetching user data:", error);
+        return [];
+    }
+};
+
+export const deleteSavedAddress = async ({userId, addressId}: {userId: any; addressId: any}) => {
+    try {
+        await deleteDoc(doc(firestore, "users", userId, "savedAddress", addressId));
+    } catch (error) {
+        console.log("Error deleting saved address:", error);
+    }
+};
+
+export const getMenuIngredients = async ({menuId, merchantId}: {menuId: any; merchantId: any}) => {
+    try {
+        const ingredientsRef = collection(firestore, "merchant", merchantId, "menus", menuId, "ingredients");
+        const snapshot = await getDocs(ingredientsRef);
+        const res = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+        return res;
+    } catch (error) {
+        console.log("Error fetching menu ingredients:", error);
+    }
+};
+
+export const sendMessage = async ({chatId, senderId, text, type}: {chatId: any; senderId: any; text: string; type: string}) => {
+    await addDoc(collection(firestore, "chats", chatId, "messages"), {
+        type,
+        senderId,
+        text,
+        sentAt: serverTimestamp(),
+    });
+    console.log("Message sent successfully");
+};
+
+export const listenToMessages = ({chatId, callback}: {chatId: any; callback: any}) => {
+    const q = query(collection(firestore, "chats", chatId, "messages"), orderBy("sentAt", "asc"));
+    return onSnapshot(q, (snapshot) => {
+        const messages = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+        callback(messages);
+    });
+};
+
+export const fetchIncomeData = async ({userId, timeFrame}: {userId: any; timeFrame: any}) => {
+    const today = new Date();
+    let days = 7;
+
+    if (timeFrame === "monthly") days = 30;
+    else if (timeFrame === "3months") days = 90;
+    else if (timeFrame === "6months") days = 180;
+
+    const earnings: number[] = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split("T")[0];
+
+        const docRef = doc(firestore, "users", userId, "earnings", dateStr);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const amount = docSnap.data()?.amount || 0;
+            earnings.push(amount);
+        } else {
+            earnings.push(0);
+        }
+    }
+
+    return earnings;
+};
+
+export const addProduct = async ({merchantId, product}: {merchantId: string; product: any}) => {
+    try {
+        if (!merchantId) throw new Error("Merchant ID is missing");
+
+        const productsRef = collection(firestore, "merchant", merchantId, "products");
+        const ref = await addDoc(productsRef, product);
+        if (!ref?.id) {
+            const fallbackDocRef = doc(productsRef);
+            await setDoc(fallbackDocRef, product);
+        }
+
+        console.log("✅ Product added with ID:", ref.id);
+        return ref.id;
+    } catch (error) {
+        console.error("❌ Failed to add product:", error);
+        throw error;
+    }
+};
+
+export const Topup = async ({userId, amount, method}: {userId: string; amount: number; method: string}) => {
+    try {
+        const userRef = doc(firestore, "users", userId);
+        const historyTopupRef = collection(firestore, "users", userId, "historyTopup");
+        const q = query(historyTopupRef, limit(1));
+        const existingHistory = await getDocs(q);
+        let status = "confirmed";
+        if (!existingHistory.empty || existingHistory.empty) {
+            await addDoc(historyTopupRef, {
+                amount,
+                createdAt: serverTimestamp(),
+                method: method,
+                status: "confirmed",
+            });
+        }
+        if (!userRef) {
+            if (status === "confirmed") await setDoc(userRef, {balance: amount}, {merge: true});
+        }
+        if (status === "confirmed") await updateDoc(userRef, {balance: increment(amount)});
+    } catch (error) {
+        throw error;
+    }
 };

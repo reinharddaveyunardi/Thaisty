@@ -110,6 +110,7 @@ export const DropDownStyles = StyleSheet.create({
     },
     dropdownButtonTxtStyle: {
         flex: 1,
+        width: 20,
         fontSize: 16,
         color: "#151E26",
     },
